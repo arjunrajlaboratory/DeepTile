@@ -13,7 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
     packages=find_packages(),
-    install_requires=['numpy', 'scikit-image'],
+    install_requires=['nd2reader', 'numpy', 'scikit-image', 'tifffile'],
     extras_require={
         'all': ['cellori', 'cellpose', 'deepcell'],
         'cellori': ['cellori'],

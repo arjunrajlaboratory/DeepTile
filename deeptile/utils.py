@@ -29,10 +29,10 @@ def calculate_indices_1d(axis_size, n_blocks, overlap):
     return indices
 
 
-def calculate_indices_2d(ary, n_blocks, overlap):
+def calculate_indices_2d(shape, n_blocks, overlap):
 
-    v_tile_indices, v_stitch_indices = calculate_indices_1d(ary.shape[-2], n_blocks[0], overlap[0])
-    h_tile_indices, h_stitch_indices = calculate_indices_1d(ary.shape[-1], n_blocks[1], overlap[1])
+    v_tile_indices, v_stitch_indices = calculate_indices_1d(shape[-2], n_blocks[0], overlap[0])
+    h_tile_indices, h_stitch_indices = calculate_indices_1d(shape[-1], n_blocks[1], overlap[1])
 
     tile_indices = (v_tile_indices, h_tile_indices)
     stitch_indices = (v_stitch_indices, h_stitch_indices)
@@ -66,3 +66,76 @@ def clear_border(mask, i, j):
         mask = remove_object(mask, mask[:, col])
 
     return mask
+
+
+def read_nd2(path):
+
+    from nd2reader import ND2Reader
+
+    file = open(path, 'rb')
+    image = ND2Reader(file)
+    axes = dict(image.sizes)
+    if 'v' in axes.keys():
+        image.iter_axes = 'v'
+        axes.pop('v')
+    if axes['t'] == 1:
+        axes.pop('t')
+    axes = ''.join(reversed(list(axes.keys())))
+    image.bundle_axes = axes
+
+    metadata = image.parser._raw_metadata
+
+    return image, metadata, axes
+
+
+def parse_nd2(image, metadata, axes, overlap, indices):
+
+    if 'v' not in image.iter_axes:
+        image = np.array(image[0]).astype(np.uint16)
+        return image
+
+    axes = list(axes)
+    s = None
+
+    n_channels = image.sizes.get('c', 1)
+
+    if len(axes) > 2:
+        s = list()
+        for ax in axes[:-2]:
+            if ax == 'c':
+                s.append(slice(image.sizes['c']))
+            else:
+                s.append(indices[ax])
+        s = tuple(s)
+
+    positions = metadata.image_metadata[b'SLxExperiment'][b'uLoopPars'][b'Points'][b'']
+    coords = np.array([(position[b'dPosX'], position[b'dPosY']) for position in positions]).T
+
+    theta = metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dAngle']
+    cos, sin = np.cos(theta), np.sin(theta)
+    r = np.array(((cos, -sin), (sin, cos)))
+    x, y = np.rint(np.dot(r, coords))
+
+    x_dim = round(np.ptp(x) / abs(x[0] - x[1])) + 1
+    y_dim = round(np.ptp(y) / abs(x[0] - x[1])) + 1
+
+    x_scaled = np.rint((x - min(x)) / (np.ptp(x) / (x_dim - 1))).astype(int)
+    y_scaled = np.rint((y - min(y)) / (np.ptp(y) / (y_dim - 1))).astype(int)
+    y_scaled = y_scaled.max() - y_scaled
+
+    width = round(image.metadata['width'] * (1 - overlap[1]))
+    height = round(image.metadata['height'] * (1 - overlap[0]))
+    shape = (n_channels, y_dim * height, x_dim * width)
+
+    tiles = np.empty(shape=(y_dim, x_dim), dtype=object)
+
+    for i in image.metadata['fields_of_view']:
+
+        tile = np.array(image[i])
+        if s is not None:
+            tile = tile[s]
+        else:
+            tile = np.expand_dims(tile, axis=0)
+        tiles[y_scaled[i], x_scaled[i]] = tile
+
+    return tiles, shape
