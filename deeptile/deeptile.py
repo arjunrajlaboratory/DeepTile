@@ -162,7 +162,6 @@ class DeepTile:
             total_count = 0
 
             for (n_i, n_j), (i_image, j_image, i, j) in self.stitch_indices.items():
-
                 i_clear = i[(0 < i_image) & (i_image < self.shape[-2])]
                 j_clear = j[(0 < j_image) & (j_image < self.shape[-1])]
                 mask = utils.clear_border(masks[n_i, n_j][channel].copy(), i_clear, j_clear)
@@ -204,7 +203,6 @@ class DeepTile:
         stitched_image = np.zeros(self.shape, dtype=int)
 
         for (n_i, n_j), (i_image, j_image, i, j) in self.stitch_indices.items():
-
             tile = tiles[n_i, n_j]
             tile_crop = tile[:, i[0]:i[1], j[0]:j[1]]
             stitched_image[:, i_image[0]:i_image[1], j_image[0]:j_image[1]] += tile_crop
@@ -250,7 +248,21 @@ class DeepTile:
 
         return border_cells
 
-    def _scan_border(self, all_border_cells, mask_all, position, position_adjacent, border_index):
+    def _calculate_stitch_indices(self, masks):
+
+        self.stitch_indices = dict()
+
+        for (n_i, n_j), mask in np.ndenumerate(masks):
+
+            if mask is not None:
+                i_image = self.border_indices[0][n_i:n_i + 2]
+                j_image = self.border_indices[1][n_j:n_j + 2]
+                i = i_image - self.tile_indices[0][n_i, 0]
+                j = j_image - self.tile_indices[1][n_j, 0]
+                self.stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
+
+    @staticmethod
+    def _scan_border(all_border_cells, mask_all, position, position_adjacent, border_index):
 
         if mask_all is not None:
 
@@ -266,16 +278,3 @@ class DeepTile:
                 all_border_cells[position_adjacent] = border_cells
 
         return all_border_cells
-
-    def _calculate_stitch_indices(self, masks):
-
-        self.stitch_indices = dict()
-
-        for (n_i, n_j), mask in np.ndenumerate(masks):
-
-            if mask is not None:
-                i_image = self.border_indices[0][n_i:n_i + 2]
-                j_image = self.border_indices[1][n_j:n_j + 2]
-                i = i_image - self.tile_indices[0][n_i, 0]
-                j = j_image - self.tile_indices[1][n_j, 0]
-                self.stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
