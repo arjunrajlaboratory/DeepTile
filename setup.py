@@ -15,7 +15,9 @@ setup(
     packages=find_packages(),
     install_requires=['numpy', 'scikit-image'],
     extras_require={
-        'cellori': ['cellori']
+        'all': ['cellori', 'deepcell'],
+        'cellori': ['cellori'],
+        'deepcell': ['deepcell']
     },
     keywords=["segmentation", "stitching"],
     classifiers=[
