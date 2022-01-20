@@ -34,6 +34,12 @@ class DeepTile:
             from cellori import Cellori
             self.app = Cellori
 
+        if self.algorithm in ['cellpose_cytoplasm', 'cellpose_nuclear']:
+            from cellpose.models import Cellpose
+            from cellpose.io import logger_setup
+            logger_setup()
+            self.app = Cellpose
+
         if self.algorithm in ['deepcell_mesmer', 'deepcell_cytoplasm', 'deepcell_nuclear']:
             from deepcell import applications
             if self.algorithm == 'deepcell_mesmer':
@@ -77,6 +83,20 @@ class DeepTile:
             mask_list = list()
             for tile_channel in tile:
                 mask_list.append(self.app(tile_channel).segment(**self.parameters)[0])
+            mask = np.stack(mask_list)
+            return mask
+
+        if self.app.__name__ == 'Cellpose':
+            model_type = None
+            if self.algorithm == 'cellpose_cytoplasm':
+                model_type = 'cyto'
+            elif self.algorithm == 'cellpose_nuclear':
+                model_type = 'nuclei'
+            app = self.app(model_type=model_type)
+            mask_list = list()
+            for tile_channel in tile:
+                mask_list.append(app.eval(tile_channel, channels=[1, 1], diameter=None, tile=False,
+                                          **self.parameters)[0])
             mask = np.stack(mask_list)
             return mask
 
