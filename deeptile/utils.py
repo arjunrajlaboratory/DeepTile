@@ -85,7 +85,7 @@ def read_nd2(path):
 
     metadata = image.parser._raw_metadata
 
-    return image, metadata, axes
+    return image, metadata
 
 
 def parse_nd2(image, metadata, overlap, slices):

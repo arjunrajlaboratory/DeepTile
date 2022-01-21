@@ -12,7 +12,7 @@ class DeepTile:
             self.image_raw = image
         elif Path(image).is_file():
             if image.endswith('.nd2'):
-                self.image_raw, self.nd2_metadata, self.axes = utils.read_nd2(image)
+                self.image_raw, self.nd2_metadata = utils.read_nd2(image)
             elif image.endswith(('.tif', '.tiff')):
                 from tifffile import imread
                 self.image_raw = imread(image)
