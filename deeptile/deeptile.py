@@ -1,5 +1,5 @@
 import numpy as np
-from deeptile import utils
+from deeptile import backends, utils
 from pathlib import Path
 from skimage import measure
 
@@ -49,24 +49,7 @@ class DeepTile:
         else:
             self.parameters = parameters
 
-        if self.algorithm == 'cellori':
-            from cellori import Cellori
-            self.app = Cellori
-
-        if self.algorithm in ['cellpose_cytoplasm', 'cellpose_nuclear']:
-            from cellpose.models import Cellpose
-            from cellpose.io import logger_setup
-            logger_setup()
-            self.app = Cellpose
-
-        if self.algorithm in ['deepcell_mesmer', 'deepcell_cytoplasm', 'deepcell_nuclear']:
-            from deepcell import applications
-            if self.algorithm == 'deepcell_mesmer':
-                self.app = applications.Mesmer
-            if self.algorithm == 'deepcell_cytoplasm':
-                self.app = applications.CytoplasmSegmentation
-            if self.algorithm == 'deepcell_nuclear':
-                self.app = applications.NuclearSegmentation
+        backends.create_app(self)
 
     def run_job(self, slices=(slice(None)), stitch_nd2=True):
 
@@ -122,60 +105,11 @@ class DeepTile:
             if tile is None:
                 mask = None
             else:
-                mask = self._segment_tile(tile)
+                mask = backends.segment_tile(self, tile)
 
             masks[index] = mask
 
         return masks, tiles
-
-    def _segment_tile(self, tile):
-
-        mask = 0
-
-        if self.app.__name__ == 'Cellori':
-            mask_list = list()
-            for tile_frame in tile:
-                mask_list.append(self.app(tile_frame).segment(**self.parameters)[0])
-            mask = np.stack(mask_list)
-
-        if self.app.__name__ == 'Cellpose':
-            model_type = None
-            if self.algorithm == 'cellpose_cytoplasm':
-                model_type = 'cyto'
-            elif self.algorithm == 'cellpose_nuclear':
-                model_type = 'nuclei'
-            app = self.app(model_type=model_type)
-            mask_list = list()
-            for tile_frame in tile:
-                mask_list.append(app.eval(tile_frame, channels=[1, 1], diameter=None, tile=False, **self.parameters)[0])
-            mask = np.stack(mask_list)
-
-        if self.app.__name__ in ['Mesmer']:
-            app = self.app()
-            tile = tile.reshape(-1, 2, *tile.shape[-2:])
-            tile = np.moveaxis(tile, 1, -1)
-            tile = np.expand_dims(tile, axis=1)
-            mask_list = list()
-            for tile_frame in tile:
-                mask_list.append(app.predict(tile_frame, **self.parameters)[0])
-            mask = np.stack(mask_list)
-            mask = np.moveaxis(mask, -1, 0)
-            self.mask_shape = (mask.shape[0], *self.image_shape[:-3], *self.image_shape[-2:])
-            mask = mask.reshape(-1, *mask.shape[-2:])
-
-        if self.app.__name__ in ['NuclearSegmentation', 'CytoplasmSegmentation']:
-            app = self.app()
-            mask_list = list()
-            for tile_frame in tile:
-                tile_frame = np.expand_dims(tile_frame, axis=-1)
-                tile_frame = np.expand_dims(tile_frame, axis=0)
-                mask_list.append(app.predict(tile_frame, **self.parameters)[0, :, :, 0])
-            mask = np.stack(mask_list)
-
-        if self.mask_shape is None:
-            self.mask_shape = self.image_shape
-
-        return mask
 
     def _stitch_masks(self, masks):
 
