@@ -6,7 +6,7 @@ from skimage import measure
 
 class DeepTile:
 
-    def __init__(self, image, nd2_overlap=(0.1, 0.1)):
+    def __init__(self, image):
 
         if isinstance(image, np.ndarray):
             self.image = image
@@ -15,7 +15,6 @@ class DeepTile:
             if image.endswith('.nd2'):
                 self.image, self.nd2_metadata, self.axes = utils.read_nd2(image)
                 self.image_type = 'nd2'
-                self.nd2_overlap = nd2_overlap
             elif image.endswith(('.tif', '.tiff')):
                 from tifffile import imread
                 self.image = imread(image)
@@ -40,7 +39,8 @@ class DeepTile:
 
     def create_job(self, n_blocks=(2, 2), overlap=(0.1, 0.1), algorithm='cellori', parameters=None):
 
-        self.n_blocks = n_blocks
+        if self.image_type == 'array':
+            self.n_blocks = n_blocks
         self.overlap = overlap
         self.algorithm = algorithm
 
@@ -77,7 +77,7 @@ class DeepTile:
 
         if (self.image_type == 'nd2') & stitch_nd2:
             image = self._stitch_nd2(tiles)
-            return image
+            return mask, image
         else:
             return mask
 
@@ -97,9 +97,10 @@ class DeepTile:
             tiles = self.get_tiles()
         elif self.image_type == 'nd2':
             tiles, self.image_shape = utils.parse_nd2(self.image, self.nd2_metadata, self.axes,
-                                                      self.nd2_overlap, nd2_indices)
+                                                      self.overlap, nd2_indices)
+            self.n_blocks = tiles.shape
             self.tile_indices, self.border_indices = utils.calculate_indices_2d(self.image_shape, tiles.shape,
-                                                                                self.nd2_overlap)
+                                                                                self.overlap)
 
         masks = np.zeros_like(tiles)
 
@@ -204,7 +205,7 @@ class DeepTile:
 
     def _stitch_nd2(self, tiles):
 
-        stitched_image = np.zeros(self.image_shape, dtype=int)
+        stitched_image = np.zeros(self.image_shape)
 
         for (n_i, n_j), (i_image, j_image, i, j) in self.stitch_indices.items():
             tile = tiles[n_i, n_j]

@@ -123,9 +123,9 @@ def parse_nd2(image, metadata, axes, overlap, indices):
     y_scaled = np.rint((y - min(y)) / (np.ptp(y) / (y_dim - 1))).astype(int)
     y_scaled = y_scaled.max() - y_scaled
 
-    width = round(image.metadata['width'] * (1 - overlap[1]))
-    height = round(image.metadata['height'] * (1 - overlap[0]))
-    shape = (n_channels, y_dim * height, x_dim * width)
+    width = round(image.metadata['width'] * (x_dim - (x_dim - 1) * overlap[1]))
+    height = round(image.metadata['height'] * (y_dim - (y_dim - 1) * overlap[0]))
+    shape = (n_channels, height, width)
 
     tiles = np.empty(shape=(y_dim, x_dim), dtype=object)
 
