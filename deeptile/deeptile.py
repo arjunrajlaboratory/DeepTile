@@ -152,11 +152,16 @@ class DeepTile:
 
         if self.app.__name__ in ['Mesmer']:
             app = self.app()
-            tile = np.moveaxis(tile, 0, -1)
-            tile = np.expand_dims(tile, axis=0)
-            mask = app.predict(tile, **self.parameters)[0]
+            tile = tile.reshape(-1, 2, *tile.shape[-2:])
+            tile = np.moveaxis(tile, 1, -1)
+            tile = np.expand_dims(tile, axis=1)
+            mask_list = list()
+            for tile_frame in tile:
+                mask_list.append(app.predict(tile_frame, **self.parameters)[0])
+            mask = np.stack(mask_list)
             mask = np.moveaxis(mask, -1, 0)
-            self.mask_shape = (mask.shape[0], *self.image_shape[-2:])
+            self.mask_shape = (mask.shape[0], *self.image_shape[:-3], *self.image_shape[-2:])
+            mask = mask.reshape(-1, *mask.shape[-2:])
 
         if self.app.__name__ in ['NuclearSegmentation', 'CytoplasmSegmentation']:
             app = self.app()
