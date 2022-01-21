@@ -27,7 +27,8 @@ class DeepTile:
         self.n_blocks = None
         self.overlap = None
         self.algorithm = None
-        self.parameters = None
+        self.model_parameters = None
+        self.eval_parameters = None
         self.app = None
 
         self.image = None
@@ -37,19 +38,25 @@ class DeepTile:
         self.border_indices = None
         self.stitch_indices = None
 
-    def create_job(self, n_blocks=(2, 2), overlap=(0.1, 0.1), algorithm='cellori', parameters=None):
+    def create_job(self, n_blocks=(2, 2), overlap=(0.1, 0.1), algorithm='cellori',
+                   model_parameters=None, eval_parameters=None):
 
         if self.image_type == 'array':
             self.n_blocks = n_blocks
         self.overlap = overlap
         self.algorithm = algorithm
 
-        if parameters is None:
-            self.parameters = dict()
+        if model_parameters is None:
+            self.model_parameters = dict()
         else:
-            self.parameters = parameters
+            self.model_parameters = model_parameters
 
-        backends.create_app(self)
+        if eval_parameters is None:
+            self.eval_parameters = dict()
+        else:
+            self.eval_parameters = eval_parameters
+
+        self.app = backends.create_app(self.algorithm)
 
     def run_job(self, slices=(slice(None)), stitch_nd2=True):
 
@@ -105,7 +112,8 @@ class DeepTile:
             if tile is None:
                 mask = None
             else:
-                mask = backends.segment_tile(self, tile)
+                mask, self.mask_shape = backends.segment_tile(tile, self.app, self.model_parameters,
+                                                              self.eval_parameters, self.image_shape, self.mask_shape)
 
             masks[index] = mask
 
