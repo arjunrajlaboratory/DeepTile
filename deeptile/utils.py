@@ -88,25 +88,14 @@ def read_nd2(path):
     return image, metadata, axes
 
 
-def parse_nd2(image, metadata, axes, overlap, indices):
+def parse_nd2(image, metadata, overlap, slices):
 
     if 'v' not in image.iter_axes:
-        image = np.array(image[0]).astype(np.uint16)
-        return image
-
-    axes = list(axes)
-    s = None
-
-    n_channels = image.sizes.get('c', 1)
-
-    if len(axes) > 2:
-        s = list()
-        for ax in axes[:-2]:
-            if ax == 'c':
-                s.append(slice(image.sizes['c']))
-            else:
-                s.append(indices[ax])
-        s = tuple(s)
+        shape = image.frame_shape
+        tile = np.array(image[0])
+        tiles = np.empty((1, 1), dtype=object)
+        tiles[0, 0] = tile
+        return tiles, shape
 
     positions = metadata.image_metadata[b'SLxExperiment'][b'uLoopPars'][b'Points'][b'']
     coords = np.array([(position[b'dPosX'], position[b'dPosY']) for position in positions]).T
@@ -125,17 +114,18 @@ def parse_nd2(image, metadata, axes, overlap, indices):
 
     width = round(image.metadata['width'] * (x_dim - (x_dim - 1) * overlap[1]))
     height = round(image.metadata['height'] * (y_dim - (y_dim - 1) * overlap[0]))
-    shape = (n_channels, height, width)
 
+    shape = None
     tiles = np.empty(shape=(y_dim, x_dim), dtype=object)
 
     for i in image.metadata['fields_of_view']:
 
         tile = np.array(image[i])
-        if s is not None:
-            tile = tile[s]
-        else:
-            tile = np.expand_dims(tile, axis=0)
+        if tile.ndim > 2:
+            tile = tile[slices]
+        if shape is None:
+            shape = (*tile.shape[:-2], height, width)
+        tile = tile.reshape(-1, *tile.shape[-2:])
         tiles[y_scaled[i], x_scaled[i]] = tile
 
     return tiles, shape
