@@ -97,35 +97,47 @@ def parse_nd2(image, metadata, overlap, slices):
         tiles[0, 0] = tile
         return tiles, shape
 
-    positions = metadata.image_metadata[b'SLxExperiment'][b'uLoopPars'][b'Points'][b'']
-    coords = np.array([(position[b'dPosX'], position[b'dPosY']) for position in positions]).T
+    coords = metadata.image_metadata[b'SLxExperiment'][b'uLoopPars'][b'Points'][b'']
+    x, y = np.array([(coord[b'dPosX'], coord[b'dPosY']) for coord in coords]).T
 
-    theta = metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dAngle']
-    cos, sin = np.cos(theta), np.sin(theta)
-    r = np.array(((cos, -sin), (sin, cos)))
-    x, y = np.rint(np.dot(r, coords))
+    x_ndim = round(np.ptp(x) / abs(x[0] - x[1])) + 1
+    y_ndim = round(np.ptp(y) / abs(x[0] - x[1])) + 1
 
-    x_dim = round(np.ptp(x) / abs(x[0] - x[1])) + 1
-    y_dim = round(np.ptp(y) / abs(x[0] - x[1])) + 1
+    j = np.rint((x - min(x)) / (np.ptp(x) / (x_ndim - 1))).astype(int)
+    i = np.rint((y - min(y)) / (np.ptp(y) / (y_ndim - 1))).astype(int)
 
-    x_scaled = np.rint((x - min(x)) / (np.ptp(x) / (x_dim - 1))).astype(int)
-    y_scaled = np.rint((y - min(y)) / (np.ptp(y) / (y_dim - 1))).astype(int)
-    y_scaled = y_scaled.max() - y_scaled
+    rotation = metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'sPicturePlanes'][b'sSampleSetting'][b'a0'][
+                                                b'pCameraSetting'][b'PropertiesFast'][b'Rotate']
 
-    width = round(image.metadata['width'] * (x_dim - (x_dim - 1) * overlap[1]))
-    height = round(image.metadata['height'] * (y_dim - (y_dim - 1) * overlap[0]))
+    if metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'sPicturePlanes'][b'sSampleSetting'][b'a0'][
+                                                b'pDeviceSetting'][b'm_iXYUse0'] == 1:
+        rotation = 180 - rotation
+
+    if rotation == 0:
+        if j[0] > j[1]:
+            j = j.max() - j
+        if i[0] > i[-1]:
+            i = i.max() - i
+    elif rotation == 180:
+        if j[0] < j[1]:
+            j = j.max() - j
+        if i[0] < i[-1]:
+            i = i.max() - i
+
+    width = round(image.metadata['width'] * (x_ndim - (x_ndim - 1) * overlap[1]))
+    height = round(image.metadata['height'] * (y_ndim - (y_ndim - 1) * overlap[0]))
 
     shape = None
-    tiles = np.empty(shape=(y_dim, x_dim), dtype=object)
+    tiles = np.empty(shape=(y_ndim, x_ndim), dtype=object)
 
-    for i in image.metadata['fields_of_view']:
+    for n in image.metadata['fields_of_view']:
 
-        tile = np.array(image[i])
+        tile = np.array(image[n])
         if tile.ndim > 2:
             tile = tile[slices]
         if shape is None:
             shape = (*tile.shape[:-2], height, width)
         tile = tile.reshape(-1, *tile.shape[-2:])
-        tiles[y_scaled[i], x_scaled[i]] = tile
+        tiles[i[n], j[n]] = tile
 
     return tiles, shape
