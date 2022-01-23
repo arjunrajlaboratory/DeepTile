@@ -97,32 +97,28 @@ def parse_nd2(image, metadata, overlap, slices):
         tiles[0, 0] = tile
         return tiles, shape
 
-    coords = metadata.image_metadata[b'SLxExperiment'][b'uLoopPars'][b'Points'][b'']
-    x, y = np.array([(coord[b'dPosX'], coord[b'dPosY']) for coord in coords]).T
+    x, y = np.array(metadata.x_data), np.array(metadata.y_data)
+
+    if x[1] - x[0] > 0:
+        x = -x
+    if y[-1] - y[0] > 0:
+        y = -y
+
+    rotation = np.array([[
+        metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dStgLgCT11'],
+        metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dStgLgCT12']
+    ], [
+        metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dStgLgCT21'],
+        metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dStgLgCT22']
+    ]])
+
+    x, y = rotation @ np.stack((x, y))
 
     x_ndim = round(np.ptp(x) / abs(x[0] - x[1])) + 1
     y_ndim = round(np.ptp(y) / abs(x[0] - x[1])) + 1
 
     j = np.rint((x - min(x)) / (np.ptp(x) / (x_ndim - 1))).astype(int)
     i = np.rint((y - min(y)) / (np.ptp(y) / (y_ndim - 1))).astype(int)
-
-    rotation = metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'sPicturePlanes'][b'sSampleSetting'][b'a0'][
-                                                b'pCameraSetting'][b'PropertiesFast'][b'Rotate']
-
-    if metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'sPicturePlanes'][b'sSampleSetting'][b'a0'][
-                                                b'pDeviceSetting'][b'm_iXYUse0'] == 1:
-        rotation = 180 - rotation
-
-    if rotation == 0:
-        if j[0] > j[1]:
-            j = j.max() - j
-        if i[0] > i[-1]:
-            i = i.max() - i
-    elif rotation == 180:
-        if j[0] < j[1]:
-            j = j.max() - j
-        if i[0] < i[-1]:
-            i = i.max() - i
 
     width = round(image.metadata['width'] * (x_ndim - (x_ndim - 1) * overlap[1]))
     height = round(image.metadata['height'] * (y_ndim - (y_ndim - 1) * overlap[0]))
