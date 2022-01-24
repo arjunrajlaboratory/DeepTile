@@ -52,8 +52,10 @@ def segment_tile(tile, app, model_parameters, eval_parameters, image_shape, mask
             mask_list.append(model.predict(tile_frame, **eval_parameters)[0])
         mask = np.stack(mask_list)
         mask = np.moveaxis(mask, -1, 0)
-        mask_shape = (mask.shape[0], *image_shape[:-3], *image_shape[-2:])
-        mask = mask.reshape(-1, *mask.shape[-2:])
+        if mask.shape[0] == 1:
+            mask_shape = (*image_shape[:-3], *image_shape[-2:])
+        elif mask.shape[0] == 2:
+            mask_shape = (2, *image_shape[:-3], *image_shape[-2:])
 
     if app.__name__ in ['NuclearSegmentation', 'CytoplasmSegmentation']:
         model = app(**model_parameters)
