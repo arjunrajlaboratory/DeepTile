@@ -97,12 +97,8 @@ def parse_nd2(image, metadata, overlap, slices):
         tiles[0, 0] = tile
         return tiles, shape
 
-    x, y = np.array(metadata.x_data), np.array(metadata.y_data)
-
-    if x[1] - x[0] > 0:
-        x = -x
-    if y[-1] - y[0] > 0:
-        y = -y
+    positions = metadata.image_metadata[b'SLxExperiment'][b'uLoopPars'][b'Points'][b'']
+    coords = np.array([(position[b'dPosX'], position[b'dPosY']) for position in positions]).T
 
     rotation = np.array([[
         metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dStgLgCT11'],
@@ -112,7 +108,12 @@ def parse_nd2(image, metadata, overlap, slices):
         metadata.image_metadata_sequence[b'SLxPictureMetadata'][b'dStgLgCT22']
     ]])
 
-    x, y = rotation @ np.stack((x, y))
+    x, y = rotation @ coords
+
+    if coords[0, 1] - coords[0, 0] > 0:
+        x = -x
+    if coords[1, -1] - coords[1, 0] > 0:
+        y = -y
 
     x_ndim = round(np.ptp(x) / abs(x[0] - x[1])) + 1
     y_ndim = round(np.ptp(y) / abs(x[0] - x[1])) + 1
@@ -131,6 +132,10 @@ def parse_nd2(image, metadata, overlap, slices):
                                image.metadata['pixel_microns']) / image.metadata['width'], 2)
         y_overlap = round(1 - (np.mean(np.diff(y_overlaps)) /
                                image.metadata['pixel_microns']) / image.metadata['height'], 2)
+
+        if not ((0 < x_overlap < 1) & (0 < y_overlap < 1)):
+            raise RuntimeError("Failed to determine overlap percentage from metadata.")
+
         overlap = (y_overlap, x_overlap)
 
     width = round(image.metadata['width'] * (x_ndim - (x_ndim - 1) * overlap[1]))
