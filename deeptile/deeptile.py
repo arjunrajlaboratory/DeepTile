@@ -68,14 +68,13 @@ class DeepTile:
         self.stitch_indices = None
 
         masks, tiles = self.segment_image(slices)
-        self._calculate_stitch_indices(masks)
+        self.stitch_indices = self._calculate_stitch_indices(tiles)
         mask = self._stitch_masks(masks)
         mask = mask.reshape(self.mask_shape)
 
         if (self.image_type == 'nd2') & stitch_nd2:
-            image = self._stitch_nd2(tiles)
-            image = image.reshape(self.image_shape)
-            return mask, image
+            self.image = self._stitch_nd2(tiles)
+            return mask, self.image
         else:
             return mask
 
@@ -85,6 +84,23 @@ class DeepTile:
         tiles[:] = utils.array_split_2d(self.image, self.tile_indices)
 
         return tiles
+
+    def get_nd2_tiles(self, slices):
+
+        tiles, self.overlap, self.image_shape = utils.parse_nd2(self.image_raw, self.nd2_metadata, self.overlap, slices)
+        self.n_blocks = tiles.shape
+        self.tile_indices, self.border_indices = utils.calculate_indices_2d(self.image_shape, self.n_blocks,
+                                                                            self.overlap)
+
+        return tiles
+
+    def stitch_nd2(self, slices=(slice(None))):
+
+        tiles = self.get_nd2_tiles(slices)
+        self.stitch_indices = self._calculate_stitch_indices(tiles)
+        self.image = self._stitch_nd2(tiles)
+
+        return self.image
 
     def segment_image(self, slices=(slice(None))):
 
@@ -100,10 +116,7 @@ class DeepTile:
                 utils.calculate_indices_2d(self.image_shape, self.n_blocks, self.overlap)
             tiles = self.get_tiles()
         elif self.image_type == 'nd2':
-            tiles, self.image_shape = utils.parse_nd2(self.image_raw, self.nd2_metadata, self.overlap, slices)
-            self.n_blocks = tiles.shape
-            self.tile_indices, self.border_indices = utils.calculate_indices_2d(self.image_shape, tiles.shape,
-                                                                                self.overlap)
+            tiles = self.get_nd2_tiles(slices)
 
         masks = np.zeros_like(tiles)
 
@@ -118,6 +131,21 @@ class DeepTile:
             masks[index] = mask
 
         return masks, tiles
+
+    def _stitch_nd2(self, tiles):
+
+        image_flat_shape = (np.prod(self.image_shape[:-2], dtype=int), *self.image_shape[-2:])
+        stitched_image = np.zeros(image_flat_shape)
+
+        for (n_i, n_j), (i_image, j_image, i, j) in self.stitch_indices.items():
+
+            tile = tiles[n_i, n_j]
+            tile_crop = tile[:, i[0]:i[1], j[0]:j[1]]
+            stitched_image[:, i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
+
+        stitched_image = stitched_image.reshape(self.image_shape)
+
+        return stitched_image
 
     def _stitch_masks(self, masks):
 
@@ -166,19 +194,6 @@ class DeepTile:
 
         return stitched_mask
 
-    def _stitch_nd2(self, tiles):
-
-        image_flat_shape = (np.prod(self.image_shape[:-2], dtype=int), *self.image_shape[-2:])
-        stitched_image = np.zeros(image_flat_shape)
-
-        for (n_i, n_j), (i_image, j_image, i, j) in self.stitch_indices.items():
-
-            tile = tiles[n_i, n_j]
-            tile_crop = tile[:, i[0]:i[1], j[0]:j[1]]
-            stitched_image[:, i_image[0]:i_image[1], j_image[0]:j_image[1]] += tile_crop
-
-        return stitched_image
-
     def _find_border_cells(self, masks, z):
 
         tile_indices_flat = (self.tile_indices[0].flatten(), self.tile_indices[1].flatten())
@@ -225,19 +240,6 @@ class DeepTile:
 
         return border_cells
 
-    def _calculate_stitch_indices(self, masks):
-
-        self.stitch_indices = dict()
-
-        for (n_i, n_j), mask in np.ndenumerate(masks):
-
-            if mask is not None:
-                i_image = self.border_indices[0][n_i:n_i + 2]
-                j_image = self.border_indices[1][n_j:n_j + 2]
-                i = i_image - self.tile_indices[0][n_i, 0]
-                j = j_image - self.tile_indices[1][n_j, 0]
-                self.stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
-
     @staticmethod
     def _scan_border(all_border_cells, mask_all, position, position_adjacent, border_index):
 
@@ -255,3 +257,18 @@ class DeepTile:
                 all_border_cells[position_adjacent] = border_cells
 
         return all_border_cells
+
+    def _calculate_stitch_indices(self, tiles):
+
+        stitch_indices = dict()
+
+        for (n_i, n_j), tile in np.ndenumerate(tiles):
+
+            if tile is not None:
+                i_image = self.border_indices[0][n_i:n_i + 2]
+                j_image = self.border_indices[1][n_j:n_j + 2]
+                i = i_image - self.tile_indices[0][n_i, 0]
+                j = j_image - self.tile_indices[1][n_j, 0]
+                stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
+
+        return stitch_indices

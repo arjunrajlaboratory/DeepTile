@@ -120,6 +120,19 @@ def parse_nd2(image, metadata, overlap, slices):
     j = np.rint((x - min(x)) / (np.ptp(x) / (x_ndim - 1))).astype(int)
     i = np.rint((y - min(y)) / (np.ptp(y) / (y_ndim - 1))).astype(int)
 
+    if overlap is None:
+        x_overlaps = np.empty(0)
+        y_overlaps = np.empty(0)
+        for col in np.unique(j):
+            x_overlaps = np.append(x_overlaps, np.mean(x[np.where(j == col)]))
+        for row in np.unique(i):
+            y_overlaps = np.append(y_overlaps, np.mean(y[np.where(i == row)]))
+        x_overlap = round(1 - (np.mean(np.diff(x_overlaps)) /
+                               image.metadata['pixel_microns']) / image.metadata['width'], 2)
+        y_overlap = round(1 - (np.mean(np.diff(y_overlaps)) /
+                               image.metadata['pixel_microns']) / image.metadata['height'], 2)
+        overlap = (y_overlap, x_overlap)
+
     width = round(image.metadata['width'] * (x_ndim - (x_ndim - 1) * overlap[1]))
     height = round(image.metadata['height'] * (y_ndim - (y_ndim - 1) * overlap[0]))
 
@@ -136,4 +149,4 @@ def parse_nd2(image, metadata, overlap, slices):
         tile = tile.reshape(-1, *tile.shape[-2:])
         tiles[i[n], j[n]] = tile
 
-    return tiles, shape
+    return tiles, overlap, shape
