@@ -136,7 +136,11 @@ class DeepTile:
 
                 i_clear = i[(0 < i_image) & (i_image < self.mask_shape[-2])]
                 j_clear = j[(0 < j_image) & (j_image < self.mask_shape[-1])]
-                mask = utils.clear_border(masks[n_i, n_j][z].copy(), i_clear, j_clear)
+
+                mask = masks[n_i, n_j]
+                mask = mask.reshape(-1, *mask.shape[-2:])
+                mask = mask[z].copy()
+                mask = utils.clear_border(mask, i_clear, j_clear)
 
                 mask_crop = mask[i[0]:i[1], j[0]:j[1]]
                 mask_crop = measure.label(mask_crop)
@@ -149,7 +153,9 @@ class DeepTile:
 
             for (n_i, n_j), cells in border_cells.items():
 
-                mask = masks[n_i, n_j][z]
+                mask = masks[n_i, n_j]
+                mask = mask.reshape(-1, *mask.shape[-2:])
+                mask = mask[z]
                 regions = measure.regionprops(mask)
 
                 for cell in cells:
@@ -197,6 +203,7 @@ class DeepTile:
                     position_l, position_r = None, None
 
                     mask_l_all = masks[n_i, n_j]
+                    mask_l_all = mask_l_all.reshape(-1, *mask_l_all.shape[-2:])
                     if mask_l_all is not None:
                         mask_l_all = mask_l_all[z]
                         if axis == 1:
@@ -207,6 +214,7 @@ class DeepTile:
                         border_cells = self._scan_border(border_cells, mask_l_all, (i, j[0]), position_l, border_index)
 
                     mask_r_all = masks[n_i, n_j + 1]
+                    mask_r_all = mask_r_all.reshape(-1, *mask_r_all.shape[-2:])
                     if mask_r_all is not None:
                         mask_r_all = mask_r_all[z]
                         if axis == 1:

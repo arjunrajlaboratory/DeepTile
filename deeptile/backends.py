@@ -64,6 +64,8 @@ def segment_tile(tile, app, model_parameters, eval_parameters, image_shape, mask
             mask_list.append(model.predict(tile_frame, **eval_parameters)[0, :, :, 0])
         mask = np.stack(mask_list)
 
+    mask = np.squeeze(mask)
+
     if mask_shape is None:
         mask_shape = image_shape
 
