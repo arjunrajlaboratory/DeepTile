@@ -9,17 +9,17 @@ class DeepTile:
     def __init__(self, image):
 
         if isinstance(image, np.ndarray):
-            self.image_raw = image
+            self.image = image
         elif Path(image).is_file():
             if image.endswith('.nd2'):
-                self.image_raw, self.nd2_metadata = utils.read_nd2(image)
+                self.image, self.nd2_metadata = utils.read_nd2(image)
             elif image.endswith(('.tif', '.tiff')):
                 from tifffile import imread
-                self.image_raw = imread(image)
+                self.image = imread(image)
         else:
             raise ValueError("Invalid image.")
 
-        if isinstance(self.image_raw, np.ndarray):
+        if isinstance(self.image, np.ndarray):
             self.image_type = 'array'
         else:
             self.image_type = 'nd2'
@@ -31,15 +31,14 @@ class DeepTile:
         self.eval_parameters = None
         self.app = None
 
-        self.image = None
         self.image_shape = None
         self.mask_shape = None
         self.tile_indices = None
         self.border_indices = None
         self.stitch_indices = None
 
-    def create_job(self, n_blocks=(2, 2), overlap=(0.1, 0.1), algorithm='cellori',
-                   model_parameters=None, eval_parameters=None):
+    def configure(self, n_blocks=(2, 2), overlap=(0.1, 0.1), algorithm='cellori',
+                  model_parameters=None, eval_parameters=None):
 
         if self.image_type == 'array':
             self.n_blocks = n_blocks
@@ -58,73 +57,53 @@ class DeepTile:
 
         self.app = backends.create_app(self.algorithm)
 
-    def run_job(self, slices=(slice(None)), stitch_nd2=True):
+    def segment_image(self, slices=(slice(None))):
 
-        self.image = None
-        self.image_shape = None
-        self.mask_shape = None
-        self.tile_indices = None
-        self.border_indices = None
-        self.stitch_indices = None
-
-        masks, tiles = self.segment_image(slices)
+        masks, tiles = self._segment_image(slices)
         self.stitch_indices = self._calculate_stitch_indices(tiles)
         mask = self._stitch_masks(masks)
-        mask = mask.reshape(self.mask_shape)
 
-        if (self.image_type == 'nd2') & stitch_nd2:
-            self.image = self._stitch_nd2(tiles)
-            return mask, self.image
-        else:
-            return mask
+        return mask, masks, tiles
 
-    def get_tiles(self):
+    def get_tiles(self, slices=(slice(None))):
 
-        tiles = np.empty(shape=self.n_blocks, dtype=object)
-        tiles[:] = utils.array_split_2d(self.image, self.tile_indices)
-
-        return tiles
-
-    def get_nd2_tiles(self, slices):
-
-        tiles, self.overlap, self.image_shape = utils.parse_nd2(self.image_raw, self.nd2_metadata, self.overlap, slices)
-        self.n_blocks = tiles.shape
-        self.tile_indices, self.border_indices = utils.calculate_indices_2d(self.image_shape, self.n_blocks,
-                                                                            self.overlap)
+        tiles = None
+        if self.image_type == 'array':
+            image = self.image[slices]
+            self.image_shape = image.shape
+            self.tile_indices, self.border_indices = \
+                utils.calculate_indices_2d(self.image_shape, self.n_blocks, self.overlap)
+            tiles = np.empty(shape=self.n_blocks, dtype=object)
+            tiles[:] = utils.array_split_2d(image, self.tile_indices)
+        elif self.image_type == 'nd2':
+            tiles, self.overlap, self.image_shape = utils.parse_nd2(self.image, self.nd2_metadata, self.overlap,
+                                                                    slices)
+            self.n_blocks = tiles.shape
+            self.tile_indices, self.border_indices = utils.calculate_indices_2d(self.image_shape, self.n_blocks,
+                                                                                self.overlap)
 
         return tiles
 
     def stitch_nd2(self, slices=(slice(None))):
 
-        tiles = self.get_nd2_tiles(slices)
+        tiles = self.get_tiles(slices)
         self.stitch_indices = self._calculate_stitch_indices(tiles)
-        self.image = self._stitch_nd2(tiles)
+        image = self._stitch_nd2(tiles)
 
-        return self.image
+        return image, tiles
 
-    def segment_image(self, slices=(slice(None))):
+    def _segment_image(self, slices=(slice(None))):
 
-        tiles = None
-        if self.image_type == 'array':
-            if self.image_raw.ndim > 2:
-                self.image = self.image_raw[slices]
-            elif self.image_raw.ndim == 2:
-                self.image = self.image_raw
-            self.image_shape = self.image.shape
-            self.image = self.image.reshape(-1, *self.image_shape[-2:])
-            self.tile_indices, self.border_indices = \
-                utils.calculate_indices_2d(self.image_shape, self.n_blocks, self.overlap)
-            tiles = self.get_tiles()
-        elif self.image_type == 'nd2':
-            tiles = self.get_nd2_tiles(slices)
-
+        tiles = self.get_tiles(slices)
         masks = np.zeros_like(tiles)
+        self.mask_shape = None
 
         for index, tile in np.ndenumerate(tiles):
 
             if tile is None:
                 mask = None
             else:
+                tile = tile.reshape(-1, *tile.shape[-2:])
                 mask, self.mask_shape = backends.segment_tile(tile, self.app, self.model_parameters,
                                                               self.eval_parameters, self.image_shape, self.mask_shape)
 
@@ -134,16 +113,13 @@ class DeepTile:
 
     def _stitch_nd2(self, tiles):
 
-        image_flat_shape = (np.prod(self.image_shape[:-2], dtype=int), *self.image_shape[-2:])
-        stitched_image = np.zeros(image_flat_shape)
+        stitched_image = np.zeros(self.image_shape)
 
         for (n_i, n_j), (i_image, j_image, i, j) in self.stitch_indices.items():
 
             tile = tiles[n_i, n_j]
-            tile_crop = tile[:, i[0]:i[1], j[0]:j[1]]
-            stitched_image[:, i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
-
-        stitched_image = stitched_image.reshape(self.image_shape)
+            tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
+            stitched_image[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
 
         return stitched_image
 
@@ -167,7 +143,7 @@ class DeepTile:
                 count = mask_crop.max()
                 mask_crop[mask_crop > 0] += total_count
                 total_count += count
-                stitched_mask[z, i_image[0]:i_image[1], j_image[0]:j_image[1]] += mask_crop
+                stitched_mask[z, i_image[0]:i_image[1], j_image[0]:j_image[1]] = mask_crop
 
             border_cells = self._find_border_cells(masks, z)
 
@@ -191,6 +167,8 @@ class DeepTile:
                         total_count += 1
 
             stitched_mask[z] = measure.label(stitched_mask[z])
+
+        stitched_mask = stitched_mask.reshape(self.mask_shape)
 
         return stitched_mask
 

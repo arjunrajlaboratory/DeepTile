@@ -151,7 +151,6 @@ def parse_nd2(image, metadata, overlap, slices):
             tile = tile[slices]
         if shape is None:
             shape = (*tile.shape[:-2], height, width)
-        tile = tile.reshape(-1, *tile.shape[-2:])
         tiles[i[n], j[n]] = tile
 
     return tiles, overlap, shape
