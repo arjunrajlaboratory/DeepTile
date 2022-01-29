@@ -3,6 +3,8 @@ import numpy as np
 
 def create_app(algorithm):
 
+    app = None
+
     if algorithm == 'cellori':
         from cellori import Cellori
         app = Cellori
