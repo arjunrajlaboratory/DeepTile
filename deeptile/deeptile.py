@@ -103,7 +103,7 @@ class DeepTile:
             tiles[:] = utils.array_split_2d(image, self.tile_indices)
         elif self.image_type == 'nd2':
             tiles, self.n_blocks, self.overlap, self.image_shape, self.tile_indices, self.border_indices = \
-                nd2.parse(*self.image, self.overlap, self.slices)
+                nd2.parse(self.image, self.overlap, self.slices)
 
         self._update_job_summary('get_tiles')
 
@@ -114,7 +114,7 @@ class DeepTile:
         self._prepare_job()
         if self.image_type == 'nd2':
             stitched_image, tiles, self.n_blocks, self.overlap, self.image_shape, self.tile_indices, \
-                self.border_indices, self.stitch_indices = nd2.stitch(*self.image, self.overlap, self.slices)
+                self.border_indices, self.stitch_indices = nd2.stitch(self.image, self.overlap, self.slices)
         else:
             raise TypeError("Image type cannot be stitched.")
 
