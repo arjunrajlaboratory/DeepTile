@@ -32,7 +32,7 @@ class DeepTile:
         self.configured = False
 
         self.image_shape = None
-        self.mask_shape = None
+        self.mask_dims = None
         self.tile_indices = None
         self.border_indices = None
         self.stitch_indices = None
@@ -68,7 +68,6 @@ class DeepTile:
 
         tiles = self.get_tiles()
         masks = np.zeros_like(tiles)
-        self.mask_shape = None
 
         for index, tile in np.ndenumerate(tiles):
 
@@ -76,8 +75,11 @@ class DeepTile:
                 mask = None
             else:
                 tile = tile.reshape(-1, *tile.shape[-2:])
-                mask, self.mask_shape = backends.segment_tile(tile, self.app, self.model_parameters,
-                                                              self.eval_parameters, self.image_shape, self.mask_shape)
+                mask = backends.segment_tile(tile, self.app, self.model_parameters, self.eval_parameters)
+                if self.mask_dims is None:
+                    self.mask_dims = mask.shape[:-2]
+                if mask.shape[:-2] != self.mask_dims:
+                    raise ValueError("Tile mask dimension mismatch.")
 
             masks[index] = mask
 
@@ -124,7 +126,8 @@ class DeepTile:
 
     def _stitch_masks(self, masks):
 
-        mask_flat_shape = (np.prod(self.mask_shape[:-2], dtype=int), *self.mask_shape[-2:])
+        mask_shape = (*self.mask_dims, *self.image_shape[-2:])
+        mask_flat_shape = (np.prod(self.mask_dims, dtype=int), *self.image_shape[-2:])
         stitched_mask = np.zeros(mask_flat_shape, dtype=int)
 
         for z in range(mask_flat_shape[0]):
@@ -133,8 +136,8 @@ class DeepTile:
 
             for (n_i, n_j), (i_image, j_image, i, j) in self.stitch_indices.items():
 
-                i_clear = i[(0 < i_image) & (i_image < self.mask_shape[-2])]
-                j_clear = j[(0 < j_image) & (j_image < self.mask_shape[-1])]
+                i_clear = i[(0 < i_image) & (i_image < mask_shape[-2])]
+                j_clear = j[(0 < j_image) & (j_image < mask_shape[-1])]
 
                 mask = masks[n_i, n_j]
                 mask = mask.reshape(-1, *mask.shape[-2:])
@@ -173,7 +176,7 @@ class DeepTile:
 
             stitched_mask[z] = measure.label(stitched_mask[z])
 
-        stitched_mask = stitched_mask.reshape(self.mask_shape)
+        stitched_mask = stitched_mask.reshape(mask_shape)
 
         return stitched_mask
 
@@ -247,7 +250,7 @@ class DeepTile:
 
         if self.configured:
             self.image_shape = None
-            self.mask_shape = None
+            self.mask_dims = None
             self.tile_indices = None
             self.border_indices = None
             self.stitch_indices = None
@@ -267,7 +270,7 @@ class DeepTile:
             'model_parameters': self.model_parameters,
             'eval_parameters': self.eval_parameters,
             'image_shape': self.image_shape,
-            'mask_shape': self.mask_shape,
+            'mask_dims': self.mask_dims,
             'tile_indices': self.tile_indices,
             'border_indices': self.border_indices,
             'stitch_indices': self.stitch_indices

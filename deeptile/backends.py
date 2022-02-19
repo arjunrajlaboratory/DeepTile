@@ -27,7 +27,7 @@ def create_app(algorithm):
     return app
 
 
-def segment_tile(tile, app, model_parameters, eval_parameters, image_shape, mask_shape):
+def segment_tile(tile, app, model_parameters, eval_parameters):
 
     mask = None
 
@@ -54,10 +54,6 @@ def segment_tile(tile, app, model_parameters, eval_parameters, image_shape, mask
             mask_list.append(model.predict(tile_frame, **eval_parameters)[0])
         mask = np.stack(mask_list)
         mask = np.moveaxis(mask, -1, 0)
-        if mask.shape[0] == 1:
-            mask_shape = (*image_shape[:-3], *image_shape[-2:])
-        elif mask.shape[0] == 2:
-            mask_shape = (2, *image_shape[:-3], *image_shape[-2:])
 
     if app.__name__ in ['NuclearSegmentation', 'CytoplasmSegmentation']:
         model = app(**model_parameters)
@@ -70,7 +66,4 @@ def segment_tile(tile, app, model_parameters, eval_parameters, image_shape, mask
 
     mask = np.squeeze(mask)
 
-    if mask_shape is None:
-        mask_shape = image_shape
-
-    return mask, mask_shape
+    return mask
