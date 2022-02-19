@@ -1,69 +1,99 @@
 import numpy as np
 
 
-def create_app(algorithm):
+def cellori_backend(model_parameters, eval_parameters):
 
-    app = None
+    def f(tile):
 
-    if algorithm == 'cellori':
         from cellori import Cellori
-        app = Cellori
 
-    if algorithm == 'cellpose':
+        def algorithm(tile_frame): return Cellori(tile_frame, **model_parameters).segment(**eval_parameters)[0]
+        mask = _process_tile_by_frame(algorithm, tile)
+
+        return mask
+
+    return f
+
+
+def cellpose_backend(model_parameters, eval_parameters):
+
+    def f(tile):
+
         from cellpose.models import Cellpose
         from cellpose.io import logger_setup
         logger_setup()
-        app = Cellpose
 
-    if algorithm in ['deepcell_mesmer', 'deepcell_cytoplasm', 'deepcell_nuclear']:
-        from deepcell import applications
-        if algorithm == 'deepcell_mesmer':
-            app = applications.Mesmer
-        if algorithm == 'deepcell_cytoplasm':
-            app = applications.CytoplasmSegmentation
-        if algorithm == 'deepcell_nuclear':
-            app = applications.NuclearSegmentation
+        model = Cellpose(**model_parameters)
 
-    return app
+        def algorithm(tile_frame): return model.eval(tile_frame, channels=[1, 1], tile=False, **eval_parameters)[0]
+        mask = _process_tile_by_frame(algorithm, tile)
+
+        return mask
+
+    return f
 
 
-def segment_tile(tile, app, model_parameters, eval_parameters):
+def deepcell_mesmer_backend(model_parameters, eval_parameters):
 
-    mask = None
+    def f(tile):
 
-    if app.__name__ == 'Cellori':
-        mask_list = list()
-        for tile_frame in tile:
-            mask_list.append(app(tile_frame, **model_parameters).segment(**eval_parameters)[0])
-        mask = np.stack(mask_list)
+        from deepcell.applications import Mesmer
 
-    if app.__name__ == 'Cellpose':
-        mask_list = list()
-        for tile_frame in tile:
-            mask_list.append(app(**model_parameters).eval(tile_frame, channels=[1, 1], tile=False,
-                                                          **eval_parameters)[0])
-        mask = np.stack(mask_list)
-
-    if app.__name__ in ['Mesmer']:
-        model = app(**model_parameters)
+        model = Mesmer(**model_parameters)
         tile = tile.reshape(-1, 2, *tile.shape[-2:])
         tile = np.moveaxis(tile, 1, -1)
         tile = np.expand_dims(tile, axis=1)
-        mask_list = list()
-        for tile_frame in tile:
-            mask_list.append(model.predict(tile_frame, **eval_parameters)[0])
-        mask = np.stack(mask_list)
+
+        def algorithm(tile_frame): return model.predict(tile_frame, **eval_parameters)[0]
+        mask = _process_tile_by_frame(algorithm, tile)
         mask = np.moveaxis(mask, -1, 0)
 
-    if app.__name__ in ['NuclearSegmentation', 'CytoplasmSegmentation']:
-        model = app(**model_parameters)
-        mask_list = list()
-        for tile_frame in tile:
-            tile_frame = np.expand_dims(tile_frame, axis=-1)
-            tile_frame = np.expand_dims(tile_frame, axis=0)
-            mask_list.append(model.predict(tile_frame, **eval_parameters)[0, :, :, 0])
-        mask = np.stack(mask_list)
+        return mask
 
-    mask = np.squeeze(mask)
+    return f
+
+
+def deepcell_nuclear_backend(model_parameters, eval_parameters):
+
+    def f(tile):
+
+        from deepcell.applications import NuclearSegmentation
+
+        model = NuclearSegmentation(**model_parameters)
+        tile = np.expand_dims(tile, axis=-1)
+        tile = np.expand_dims(tile, axis=1)
+
+        def algorithm(tile_frame): return model.predict(tile_frame, **eval_parameters)[0, :, :, 0]
+        mask = _process_tile_by_frame(algorithm, tile)
+
+        return mask
+
+    return f
+
+
+def deepcell_cytoplasm_backend(model_parameters, eval_parameters):
+
+    def f(tile):
+
+        from deepcell.applications import CytoplasmSegmentation
+
+        model = CytoplasmSegmentation(**model_parameters)
+        tile = np.expand_dims(tile, axis=-1)
+        tile = np.expand_dims(tile, axis=1)
+
+        def algorithm(tile_frame): return model.predict(tile_frame, **eval_parameters)[0, :, :, 0]
+        mask = _process_tile_by_frame(algorithm, tile)
+
+        return mask
+
+    return f
+
+
+def _process_tile_by_frame(algorithm, tile):
+
+    mask_list = list()
+    for tile_frame in tile:
+        mask_list.append(algorithm(tile_frame))
+    mask = np.stack(mask_list)
 
     return mask

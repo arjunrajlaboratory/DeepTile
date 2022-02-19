@@ -1,5 +1,5 @@
 import numpy as np
-from deeptile import backends, nd2, utils
+from deeptile import nd2, utils
 from pathlib import Path
 from skimage import measure
 
@@ -25,10 +25,6 @@ class DeepTile:
         self.n_blocks = None
         self.overlap = None
         self.slices = None
-        self.algorithm = None
-        self.model_parameters = None
-        self.eval_parameters = None
-        self.app = None
         self.configured = False
 
         self.image_shape = None
@@ -38,31 +34,16 @@ class DeepTile:
         self.stitch_indices = None
         self.job_summary = None
 
-    def configure(self, n_blocks=(2, 2), overlap=(0.1, 0.1), slices=(slice(None)), algorithm='cellori',
-                  model_parameters=None, eval_parameters=None):
+    def configure(self, n_blocks=(2, 2), overlap=(0.1, 0.1), slices=(slice(None))):
 
         if self.image_type == 'array':
             self.n_blocks = n_blocks
         self.overlap = overlap
         self.slices = slices
-        self.algorithm = algorithm
-
-        if model_parameters is None:
-            self.model_parameters = dict()
-        else:
-            self.model_parameters = model_parameters
-
-        if eval_parameters is None:
-            self.eval_parameters = dict()
-        else:
-            self.eval_parameters = eval_parameters
-
-        if algorithm is not None:
-            self.app = backends.create_app(self.algorithm)
 
         self.configured = True
 
-    def segment_image(self):
+    def process_image(self, f):
 
         self._prepare_job()
 
@@ -75,7 +56,9 @@ class DeepTile:
                 mask = None
             else:
                 tile = tile.reshape(-1, *tile.shape[-2:])
-                mask = backends.segment_tile(tile, self.app, self.model_parameters, self.eval_parameters)
+                print(tile.shape)
+                mask = f(tile)
+                mask = np.squeeze(mask)
                 if self.mask_dims is None:
                     self.mask_dims = mask.shape[:-2]
                 if mask.shape[:-2] != self.mask_dims:
@@ -86,7 +69,7 @@ class DeepTile:
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.border_indices, self.tile_indices)
         mask = self._stitch_masks(masks)
 
-        self._update_job_summary('segment_image')
+        self._update_job_summary('process_image')
 
         return mask, masks, tiles
 
@@ -266,9 +249,6 @@ class DeepTile:
             'n_blocks': self.n_blocks,
             'overlap': self.overlap,
             'slices': self.slices,
-            'algorithm': self.algorithm,
-            'model_parameters': self.model_parameters,
-            'eval_parameters': self.eval_parameters,
             'image_shape': self.image_shape,
             'mask_dims': self.mask_dims,
             'tile_indices': self.tile_indices,
