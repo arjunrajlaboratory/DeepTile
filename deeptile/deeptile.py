@@ -56,7 +56,6 @@ class DeepTile:
                 mask = None
             else:
                 tile = tile.reshape(-1, *tile.shape[-2:])
-                print(tile.shape)
                 mask = f(tile)
                 mask = np.squeeze(mask)
                 if self.mask_dims is None:
