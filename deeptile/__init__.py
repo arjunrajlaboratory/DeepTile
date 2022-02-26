@@ -1,1 +1,1 @@
-from deeptile.deeptile import DeepTile
+from deeptile.io import load

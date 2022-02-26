@@ -1,9 +1,9 @@
 import numpy as np
 
 
-def cellori_backend(model_parameters, eval_parameters):
+def cellori_segmentation(model_parameters, eval_parameters):
 
-    def f(tile):
+    def func_process(tile):
 
         from cellori import Cellori
 
@@ -12,12 +12,12 @@ def cellori_backend(model_parameters, eval_parameters):
 
         return mask
 
-    return f
+    return func_process
 
 
-def cellpose_backend(model_parameters, eval_parameters):
+def cellpose_segmentation(model_parameters, eval_parameters):
 
-    def f(tile):
+    def func_process(tile):
 
         from cellpose.models import Cellpose
         from cellpose.io import logger_setup
@@ -30,12 +30,12 @@ def cellpose_backend(model_parameters, eval_parameters):
 
         return mask
 
-    return f
+    return func_process
 
 
-def deepcell_mesmer_backend(model_parameters, eval_parameters):
+def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
-    def f(tile):
+    def func_process(tile):
 
         from deepcell.applications import Mesmer
 
@@ -50,12 +50,12 @@ def deepcell_mesmer_backend(model_parameters, eval_parameters):
 
         return mask
 
-    return f
+    return func_process
 
 
-def deepcell_nuclear_backend(model_parameters, eval_parameters):
+def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
-    def f(tile):
+    def func_process(tile):
 
         from deepcell.applications import NuclearSegmentation
 
@@ -68,12 +68,12 @@ def deepcell_nuclear_backend(model_parameters, eval_parameters):
 
         return mask
 
-    return f
+    return func_process
 
 
-def deepcell_cytoplasm_backend(model_parameters, eval_parameters):
+def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
-    def f(tile):
+    def func_process(tile):
 
         from deepcell.applications import CytoplasmSegmentation
 
@@ -86,7 +86,7 @@ def deepcell_cytoplasm_backend(model_parameters, eval_parameters):
 
         return mask
 
-    return f
+    return func_process
 
 
 def _process_tile_by_frame(algorithm, tile):

@@ -40,7 +40,7 @@ def calculate_indices(shape, n_blocks, overlap):
     return tile_indices, border_indices
 
 
-def calculate_stitch_indices(tiles, border_indices, tile_indices):
+def calculate_stitch_indices(tiles, tile_indices, border_indices):
 
     stitch_indices = dict()
 

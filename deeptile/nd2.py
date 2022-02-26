@@ -81,18 +81,3 @@ def parse(image, overlap, slices):
     tile_indices, border_indices = utils.calculate_indices(image_shape, n_blocks, overlap)
 
     return tiles, n_blocks, overlap, image_shape, tile_indices, border_indices
-
-
-def stitch(image, overlap, slices):
-
-    tiles, n_blocks, overlap, image_shape, tile_indices, border_indices = parse(image, overlap, slices)
-    stitch_indices = utils.calculate_stitch_indices(tiles, border_indices, tile_indices)
-    stitched_image = np.zeros(image_shape)
-
-    for (n_i, n_j), (i_image, j_image, i, j) in stitch_indices.items():
-
-        tile = tiles[n_i, n_j]
-        tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
-        stitched_image[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
-
-    return stitched_image, tiles, n_blocks, overlap, image_shape, tile_indices, border_indices, stitch_indices
