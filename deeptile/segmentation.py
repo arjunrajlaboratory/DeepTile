@@ -3,9 +3,9 @@ import numpy as np
 
 def cellori_segmentation(model_parameters, eval_parameters):
 
-    def func_process(tile):
+    from cellori import Cellori
 
-        from cellori import Cellori
+    def func_process(tile):
 
         def algorithm(tile_frame): return Cellori(tile_frame, **model_parameters).segment(**eval_parameters)[0]
         mask = _process_tile_by_frame(algorithm, tile)
@@ -17,11 +17,11 @@ def cellori_segmentation(model_parameters, eval_parameters):
 
 def cellpose_segmentation(model_parameters, eval_parameters):
 
-    def func_process(tile):
+    from cellpose.models import Cellpose
+    from cellpose.io import logger_setup
+    logger_setup()
 
-        from cellpose.models import Cellpose
-        from cellpose.io import logger_setup
-        logger_setup()
+    def func_process(tile):
 
         model = Cellpose(**model_parameters)
 
@@ -35,9 +35,9 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
 def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
-    def func_process(tile):
+    from deepcell.applications import Mesmer
 
-        from deepcell.applications import Mesmer
+    def func_process(tile):
 
         model = Mesmer(**model_parameters)
         tile = tile.reshape(-1, 2, *tile.shape[-2:])
@@ -55,9 +55,9 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
 def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
-    def func_process(tile):
+    from deepcell.applications import NuclearSegmentation
 
-        from deepcell.applications import NuclearSegmentation
+    def func_process(tile):
 
         model = NuclearSegmentation(**model_parameters)
         tile = np.expand_dims(tile, axis=-1)
@@ -73,9 +73,9 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
 def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
-    def func_process(tile):
+    from deepcell.applications import CytoplasmSegmentation
 
-        from deepcell.applications import CytoplasmSegmentation
+    def func_process(tile):
 
         model = CytoplasmSegmentation(**model_parameters)
         tile = np.expand_dims(tile, axis=-1)
