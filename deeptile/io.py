@@ -38,7 +38,7 @@ def from_tiff(image):
 
 def from_nd2(image):
 
-    from deeptile import nd2
+    from deeptile.sources import nd2
     image = nd2.read(image)
     dt = deeptile.DeepTileND2(image)
 

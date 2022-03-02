@@ -1,5 +1,4 @@
 import numpy as np
-from deeptile import utils
 from skimage import measure
 
 
@@ -48,7 +47,7 @@ def stitch_masks():
                 mask = masks[n_i, n_j]
                 mask = mask.reshape(-1, *mask.shape[-2:])
                 mask = mask[z].copy()
-                mask = utils.clear_border(mask, i_clear, j_clear)
+                mask = _clear_border(mask, i_clear, j_clear)
 
                 mask_crop = mask[i[0]:i[1], j[0]:j[1]]
                 mask_crop = measure.label(mask_crop)
@@ -154,3 +153,23 @@ def _scan_border(all_border_objects, mask_all, position, position_adjacent, bord
             all_border_objects[position_adjacent] = border_objects
 
     return all_border_objects
+
+
+def _clear_border(mask, i, j):
+
+    for row in i:
+        mask = _remove_object(mask, mask[row])
+
+    for col in j:
+        mask = _remove_object(mask, mask[:, col])
+
+    return mask
+
+
+def _remove_object(mask, objects):
+
+    objects = np.unique(objects)
+    objects = objects[objects > 0]
+    mask[np.isin(mask, objects)] = 0
+
+    return mask

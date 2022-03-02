@@ -1,6 +1,5 @@
 import nd2
 import numpy as np
-from deeptile import utils
 
 
 def read(image):
@@ -78,6 +77,4 @@ def parse(image, overlap, slices):
 
         n_blocks = tiles.shape
 
-    tile_indices, border_indices = utils.calculate_indices(image_shape, n_blocks, overlap)
-
-    return tiles, n_blocks, overlap, image_shape, tile_indices, border_indices
+    return tiles, n_blocks, overlap, image_shape

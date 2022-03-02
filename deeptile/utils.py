@@ -1,18 +1,6 @@
 import numpy as np
 
 
-def axis_slice(ary, axis, start, end, step=1):
-
-    return ary[(slice(None),) * (axis % ary.ndim) + (slice(start, end, step),)]
-
-
-def array_split(ary, indices, axis):
-
-    sub_arys = [axis_slice(ary, axis, *i) for i in indices]
-
-    return sub_arys
-
-
 def calculate_indices_1d(axis_size, n_blocks, overlap):
 
     block_size = axis_size / (n_blocks - (n_blocks - 1) * overlap)
@@ -54,31 +42,3 @@ def calculate_stitch_indices(tiles, tile_indices, border_indices):
             stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
 
     return stitch_indices
-
-
-def array_split_2d(ary, indices):
-
-    sub_arys = array_split(ary, indices[0], -2)
-    sub_arys = [array_split(sub_ary, indices[1], -1) for sub_ary in sub_arys]
-
-    return sub_arys
-
-
-def remove_object(mask, objects):
-
-    objects = np.unique(objects)
-    objects = objects[objects > 0]
-    mask[np.isin(mask, objects)] = 0
-
-    return mask
-
-
-def clear_border(mask, i, j):
-
-    for row in i:
-        mask = remove_object(mask, mask[row])
-
-    for col in j:
-        mask = remove_object(mask, mask[:, col])
-
-    return mask
