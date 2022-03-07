@@ -50,7 +50,7 @@ class DeepTile:
 
         self._check_configuration()
 
-        stitch = func_stitch(tiles, self.image_shape, self.tile_indices, self.border_indices, self.stitch_indices)
+        stitch = func_stitch(self, tiles)
 
         self._update_job_summary('stitch')
 
