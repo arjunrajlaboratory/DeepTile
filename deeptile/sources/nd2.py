@@ -11,7 +11,7 @@ def parse(image, overlap, slices):
 
     if 'P' not in image.sizes.keys():
 
-        tile = image.asarray()
+        tile = image.to_dask()
         tiles = np.empty((1, 1), dtype=object)
         tiles[0, 0] = tile
         n_blocks = (1, 1)
@@ -63,7 +63,7 @@ def parse(image, overlap, slices):
         height = round(image.attributes.heightPx * (y_ndim - (y_ndim - 1) * overlap[0]))
 
         image_shape = None
-        image_array = image.asarray()
+        image_array = image.to_dask()
         tiles = np.empty(shape=(y_ndim, x_ndim), dtype=object)
 
         for n in range(image.sizes['P']):

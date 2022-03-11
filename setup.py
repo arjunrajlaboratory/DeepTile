@@ -13,10 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
     packages=find_packages(),
-    install_requires=['nd2', 'numpy', 'scikit-image', 'tifffile'],
-    extras_require={
-        'segmentation': ['cellori', 'cellpose', 'deepcell'],
-    },
+    install_requires=['dask', 'nd2', 'numpy', 'rasterio', 'scikit-image', 'tifffile'],
     keywords=["segmentation", "stitching"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

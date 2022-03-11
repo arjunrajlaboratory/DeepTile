@@ -29,8 +29,8 @@ def from_array(image):
 
 def from_tiff(image):
 
-    from tifffile import imread
-    image = imread(image)
+    from deeptile.sources import tiff
+    image = tiff.read(image)
     dt = from_array(image)
 
     return dt
