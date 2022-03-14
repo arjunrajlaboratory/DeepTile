@@ -21,14 +21,14 @@ def parse(image, image_shape, tiling, overlap, slices):
                                        tile_size=dict(height=tile_size[0], width=tile_size[1]),
                                        tile_overlap=dict(y=overlap_size[0], x=overlap_size[1]))
     lazy_imread = delayed(imread)
-    for tile in tile_iterator:
-        delayed_reader = lazy_imread(tile)
-        shape = (tile['height'], tile['width'])
-        tiles[tile['level_y'], tile['level_x']] = da.from_delayed(delayed_reader, shape=shape, dtype=object)
-        gys.append(tile['gy'])
-        gxs.append(tile['gx'])
-        heights.append(tile['height'])
-        widths.append(tile['width'])
+    for tile_dict in tile_iterator:
+        delayed_reader = lazy_imread(tile_dict)
+        shape = (tile_dict['height'], tile_dict['width'])
+        tiles[tile_dict['level_y'], tile_dict['level_x']] = da.from_delayed(delayed_reader, shape=shape, dtype=object)
+        gys.append(tile_dict['gy'])
+        gxs.append(tile_dict['gx'])
+        heights.append(tile_dict['height'])
+        widths.append(tile_dict['width'])
 
     gys = gys[::tiling[1]]
     gxs = gxs[:tiling[1]]
