@@ -35,15 +35,13 @@ def parse(image, image_shape, tiling, overlap, slices):
     heights = heights[::tiling[1]]
     widths = widths[:tiling[1]]
 
-    v_tile_indices = np.cumsum((gys, heights), axis=0).T
-    h_tile_indices = np.cumsum((gxs, widths), axis=0).T
+    v_tile_indices = np.cumsum((gys, heights), axis=0).T.astype(int)
+    h_tile_indices = np.cumsum((gxs, widths), axis=0).T.astype(int)
     tile_indices = (v_tile_indices, h_tile_indices)
 
-    v_border_indices = np.mean(v_tile_indices.ravel()[1:-1].reshape(-1, 2), axis=1)
-    v_border_indices = np.rint(v_border_indices).astype(int)
+    v_border_indices = np.mean(v_tile_indices.ravel()[1:-1].reshape(-1, 2), axis=1).astype(int)
     v_border_indices = np.concatenate(([0], v_border_indices, [image_shape[0]]))
-    h_border_indices = np.mean(h_tile_indices.ravel()[1:-1].reshape(-1, 2), axis=1)
-    h_border_indices = np.rint(h_border_indices).astype(int)
+    h_border_indices = np.mean(h_tile_indices.ravel()[1:-1].reshape(-1, 2), axis=1).astype(int)
     h_border_indices = np.concatenate(([0], h_border_indices, [image_shape[1]]))
     border_indices = (v_border_indices, h_border_indices)
 
