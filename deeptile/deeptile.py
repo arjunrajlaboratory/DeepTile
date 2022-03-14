@@ -116,7 +116,7 @@ class DeepTileArray(DeepTile):
         self.tiling = utils.check_tiling(self.tiling, self.image_shape, self.max_tile_size, self.overlap)
         self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tiling,
                                                                          self.overlap)
-        tiles = utils.array.array_split_2d(image, self.tile_indices)
+        tiles = utils.array_split_2d(image, self.tile_indices)
         tiles = utils.cast_list_to_array(tiles)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
