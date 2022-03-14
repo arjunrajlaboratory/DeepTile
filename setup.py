@@ -13,7 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
     packages=find_packages(),
-    install_requires=['dask', 'nd2', 'numpy', 'scikit-image', 'tifffile'],
+    install_requires=['dask', 'dask-image', 'nd2', 'numpy', 'scikit-image', 'tifffile'],
     keywords=["segmentation", "stitching"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
