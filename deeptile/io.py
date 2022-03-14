@@ -27,6 +27,13 @@ def from_array(image):
     return dt
 
 
+def from_large_image(image):
+
+    dt = deeptile.DeepTileLargeImage(image)
+
+    return dt
+
+
 def from_tiff(image):
 
     from deeptile.sources import tiff
