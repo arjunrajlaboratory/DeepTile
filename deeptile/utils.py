@@ -1,6 +1,37 @@
 import numpy as np
 
 
+def axis_slice(ary, axis, start, end, step=1):
+
+    return ary[(slice(None),) * (axis % ary.ndim) + (slice(start, end, step),)]
+
+
+def array_split(ary, indices, axis):
+
+    sub_arys = [axis_slice(ary, axis, *i) for i in indices]
+
+    return sub_arys
+
+
+def array_split_2d(ary, indices):
+
+    sub_arys = array_split(ary, indices[0], -2)
+    sub_arys = [array_split(sub_ary, indices[1], -1) for sub_ary in sub_arys]
+
+    return sub_arys
+
+
+def cast_list_to_array(lst):
+
+    ary = np.empty(shape=(len(lst), len(lst[0])), dtype=object)
+
+    for i, sublst in enumerate(lst):
+        for j, subary in enumerate(sublst):
+            ary[i, j] = subary
+
+    return ary
+
+
 def calculate_tiling(axis_size, max_tile_size, overlap):
 
     tiling = (axis_size / max_tile_size - overlap) / (1 - overlap)
@@ -78,14 +109,3 @@ def calculate_stitch_indices(tiles, tile_indices, border_indices):
             stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
 
     return stitch_indices
-
-
-def cast_list_to_array(lst):
-
-    ary = np.empty(shape=(len(lst), len(lst[0])), dtype=object)
-
-    for i, sublst in enumerate(lst):
-        for j, subary in enumerate(sublst):
-            ary[i, j] = subary
-
-    return ary

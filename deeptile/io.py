@@ -34,19 +34,19 @@ def from_large_image(image):
     return dt
 
 
-def from_tiff(image):
-
-    from deeptile.sources import tiff
-    image = tiff.read(image)
-    dt = from_array(image)
-
-    return dt
-
-
 def from_nd2(image):
 
     from deeptile.sources import nd2
     image = nd2.read(image)
     dt = deeptile.DeepTileND2(image)
+
+    return dt
+
+
+def from_tiff(image):
+
+    from deeptile.sources import tiff
+    image = tiff.read(image)
+    dt = from_array(image)
 
     return dt
