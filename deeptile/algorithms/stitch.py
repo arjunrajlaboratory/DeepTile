@@ -7,7 +7,8 @@ def stitch_tiles():
     def func_stitch(dt, tiles):
 
         dtype = tiles[list(dt.stitch_indices.keys())[0]].dtype
-        stitch = np.zeros(dt.image_shape, dtype=dtype)
+        stitch_shape = _get_stitch_shape(tiles, dt.image_shape)
+        stitch = np.zeros(stitch_shape, dtype=dtype)
 
         for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
             tile = tiles[n_i, n_j]
@@ -23,17 +24,8 @@ def stitch_masks():
 
     def func_stitch(dt, masks):
 
-        mask_dims = None
-
-        for mask in masks:
-            if mask is None:
-                continue
-            else:
-                mask_dims = mask.shape[:-2]
-                break
-
-        mask_shape = (*mask_dims, *dt.image_shape[-2:])
-        mask_flat_shape = (np.prod(mask_dims, dtype=int), *dt.image_shape[-2:])
+        mask_shape = _get_stitch_shape(masks, dt.image_shape)
+        mask_flat_shape = (np.prod(mask_shape[:-2], dtype=int), *mask_shape[-2:])
         stitched_mask = np.zeros(mask_flat_shape, dtype=int)
 
         for z in range(mask_flat_shape[0]):
@@ -173,3 +165,19 @@ def _remove_blob(mask, blobs):
     mask[np.isin(mask, blobs)] = 0
 
     return mask
+
+
+def _get_stitch_shape(tiles, image_shape):
+
+    dims = None
+
+    for tile in tiles:
+        if tile is None:
+            continue
+        else:
+            dims = tile.shape[:-2]
+            break
+
+    stitch_shape = (*dims, *image_shape[-2:])
+
+    return stitch_shape
