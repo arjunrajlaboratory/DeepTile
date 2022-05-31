@@ -114,6 +114,7 @@ class DeepTileArray(DeepTile):
                                                                                       self.overlap)
         tiles = utils.array_split_2d(image, self.tile_indices)
         tiles = utils.cast_list_to_array(tiles)
+        tiles = utils.pad_tiles(tiles, self.tile_size)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
@@ -146,6 +147,7 @@ class DeepTileLargeImage(DeepTile):
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
         tiles, self.tiling, self.tile_indices, self.border_indices = \
             sources.large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
+        tiles = utils.pad_tiles(tiles, self.tile_size)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
