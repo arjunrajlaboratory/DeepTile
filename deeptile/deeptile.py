@@ -10,7 +10,7 @@ class DeepTile:
         self.image_type = None
 
         self.tiling = None
-        self.max_tile_size = None
+        self.tile_size = None
         self.overlap = None
         self.slices = None
         self.configured = False
@@ -76,7 +76,7 @@ class DeepTile:
             'job_type': job_type,
             'image_type': self.image_type,
             'tiling': self.tiling,
-            'max_tile_size': self.max_tile_size,
+            'tile_size': self.tile_size,
             'overlap': self.overlap,
             'slices': self.slices,
             'image_shape': self.image_shape,
@@ -93,14 +93,11 @@ class DeepTileArray(DeepTile):
         super().__init__(image)
         self.image_type = 'array'
 
-    def configure(self, tiling=None, max_tile_size=(1024, 1024), overlap=(0.1, 0.1), slices=(slice(None))):
+    def configure(self, tile_size=(1024, 1024), overlap=(0.1, 0.1), slices=(slice(None))):
 
         self._reset()
 
-        if (tiling is None) and (max_tile_size is None):
-            raise ValueError("At least one of tiling and max_tile_size must be specified.")
-        self.tiling = tiling
-        self.max_tile_size = max_tile_size
+        self.tile_size = tile_size
         self.overlap = overlap
         self.slices = slices
 
@@ -113,9 +110,8 @@ class DeepTileArray(DeepTile):
         image = self.image[self.slices]
         self.image_shape = image.shape
 
-        self.tiling = utils.check_tiling(self.tiling, self.image_shape, self.max_tile_size, self.overlap)
-        self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tiling,
-                                                                         self.overlap)
+        self.tiling, self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tile_size,
+                                                                                      self.overlap)
         tiles = utils.array_split_2d(image, self.tile_indices)
         tiles = utils.cast_list_to_array(tiles)
 
@@ -133,14 +129,11 @@ class DeepTileLargeImage(DeepTile):
         super().__init__(image)
         self.image_type = 'large_image'
 
-    def configure(self, tiling=None, max_tile_size=(1024, 1024), overlap=(0.1, 0.1), slices=0):
+    def configure(self, tile_size=(1024, 1024), overlap=(0.1, 0.1), slices=0):
 
         self._reset()
 
-        if (tiling is None) and (max_tile_size is None):
-            raise ValueError("At least one of tiling and max_tile_size must be specified.")
-        self.tiling = tiling
-        self.max_tile_size = max_tile_size
+        self.tile_size = tile_size
         self.overlap = overlap
         self.slices = slices
 
@@ -151,9 +144,8 @@ class DeepTileLargeImage(DeepTile):
         self._check_configuration()
 
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
-        self.tiling = utils.check_tiling(self.tiling, self.image_shape, self.max_tile_size, self.overlap)
-        tiles, self.tile_indices, self.border_indices = \
-            sources.large_image.parse(self.image, self.image_shape, self.tiling, self.overlap, self.slices)
+        tiles, self.tiling, self.tile_indices, self.border_indices = \
+            sources.large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
@@ -182,9 +174,11 @@ class DeepTileND2(DeepTile):
 
         self._check_configuration()
 
-        tiles, self.tiling, self.overlap, self.image_shape = sources.nd2.parse(self.image, self.overlap, self.slices)
+        tiles, self.tiling, self.tile_size, self.overlap, self.image_shape = sources.nd2.parse(self.image, self.overlap,
+                                                                                               self.slices)
 
-        self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tiling, self.overlap)
+        _, self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tile_size,
+                                                                            self.overlap)
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
         self._update_job_summary('get_tiles')

@@ -14,7 +14,7 @@ def parse(image, overlap, slices):
         tile = image.to_dask()
         tiles = np.empty((1, 1), dtype=object)
         tiles[0, 0] = tile
-        n_blocks = (1, 1)
+        tiling = (1, 1)
         overlap = (0, 0)
         image_shape = tile.shape
 
@@ -59,8 +59,8 @@ def parse(image, overlap, slices):
 
             overlap = (y_overlap, x_overlap)
 
-        width = round(image.attributes.widthPx * (x_ndim - (x_ndim - 1) * overlap[1]))
-        height = round(image.attributes.heightPx * (y_ndim - (y_ndim - 1) * overlap[0]))
+        width = x_ndim * image.attributes.widthPx - (x_ndim - 1) * round(image.attributes.widthPx * overlap[1])
+        height = y_ndim * image.attributes.heightPx - (y_ndim - 1) * round(image.attributes.heightPx * overlap[0])
 
         image_shape = None
         image_array = image.to_dask()
@@ -75,6 +75,8 @@ def parse(image, overlap, slices):
                 image_shape = (*tile.shape[:-2], height, width)
             tiles[i[n], j[n]] = tile
 
-        n_blocks = tiles.shape
+        tiling = tiles.shape
 
-    return tiles, n_blocks, overlap, image_shape
+    tile_size = (image.attributes.heightPx, image.attributes.widthPx)
+
+    return tiles, tiling, tile_size, overlap, image_shape

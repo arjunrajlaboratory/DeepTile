@@ -4,10 +4,11 @@ from dask import delayed
 from deeptile import utils
 
 
-def parse(image, image_shape, tiling, overlap, slices):
+def parse(image, image_shape, tile_size, overlap, slices):
 
-    tile_size = utils.calculate_tile_size(np.array(image_shape), np.array(tiling), np.array(overlap))
-    overlap_size = utils.calculate_overlap_size(tile_size, np.array(overlap))
+    overlap_size = utils.calculate_overlap_size(np.array(tile_size), np.array(overlap))
+    tiling = utils.calculate_tiling(np.array(image_shape), np.array(tile_size), overlap_size)
+    tiling = tuple(tiling)
     tile_size = np.ceil(tile_size)
     overlap_size = np.floor(overlap_size)
 
@@ -45,7 +46,7 @@ def parse(image, image_shape, tiling, overlap, slices):
     h_border_indices = np.concatenate(([0], h_border_indices, [image_shape[1]]))
     border_indices = (v_border_indices, h_border_indices)
 
-    return tiles, tile_indices, border_indices
+    return tiles, tiling, tile_indices, border_indices
 
 
 def imread(tile_dict):
