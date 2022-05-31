@@ -1,18 +1,21 @@
 import numpy as np
+from deeptile.algorithms.base import Algorithm
 
 
 def cellori_segmentation(model_parameters, eval_parameters):
 
     from cellori import Cellori
 
-    def func_process(tile):
+    def func_segment(tile):
 
         def algorithm(tile_frame): return Cellori(tile_frame, **model_parameters).segment(**eval_parameters)[0]
         mask = _process_tile_by_frame(algorithm, tile)
 
         return mask
 
-    return func_process
+    func_segment = Algorithm(func_segment, batch=False)
+
+    return func_segment
 
 
 def cellpose_segmentation(model_parameters, eval_parameters):
@@ -21,7 +24,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
     from cellpose.io import logger_setup
     logger_setup()
 
-    def func_process(tile):
+    def func_segment(tile):
 
         model = Cellpose(**model_parameters)
 
@@ -30,14 +33,16 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    return func_process
+    func_segment = Algorithm(func_segment, batch=False)
+
+    return func_segment
 
 
 def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
     from deepcell.applications import Mesmer
 
-    def func_process(tile):
+    def func_segment(tile):
 
         model = Mesmer(**model_parameters)
         tile = tile.reshape(-1, 2, *tile.shape[-2:])
@@ -50,14 +55,16 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    return func_process
+    func_segment = Algorithm(func_segment, batch=False)
+
+    return func_segment
 
 
 def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
     from deepcell.applications import NuclearSegmentation
 
-    def func_process(tile):
+    def func_segment(tile):
 
         model = NuclearSegmentation(**model_parameters)
         tile = np.expand_dims(tile, axis=-1)
@@ -68,14 +75,16 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    return func_process
+    func_segment = Algorithm(func_segment, batch=False)
+
+    return func_segment
 
 
 def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
     from deepcell.applications import CytoplasmSegmentation
 
-    def func_process(tile):
+    def func_segment(tile):
 
         model = CytoplasmSegmentation(**model_parameters)
         tile = np.expand_dims(tile, axis=-1)
@@ -86,7 +95,9 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    return func_process
+    func_segment = Algorithm(func_segment, batch=False)
+
+    return func_segment
 
 
 def _process_tile_by_frame(algorithm, tile):

@@ -1,4 +1,5 @@
 import numpy as np
+from deeptile.algorithms.base import Algorithm
 from skimage import measure
 
 
@@ -16,6 +17,8 @@ def stitch_tiles():
             stitch[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
 
         return stitch
+
+    func_stitch = Algorithm(func_stitch, batch=False)
 
     return func_stitch
 
@@ -76,6 +79,8 @@ def stitch_masks():
         stitched_mask = stitched_mask.reshape(mask_shape)
 
         return stitched_mask
+
+    func_stitch = Algorithm(func_stitch, batch=False)
 
     return func_stitch
 
