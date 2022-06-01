@@ -52,6 +52,20 @@ def pad_tiles(tiles, tile_size):
     return tiles
 
 
+def unpad_tiles(tiles, tile_indices):
+
+    corner_tile_size = (tile_indices[0][-1, 1] - tile_indices[0][-1, 0],
+                        tile_indices[1][-1, 1] - tile_indices[1][-1, 0])
+    if tiles[-1, 0].shape[-2] > corner_tile_size[0]:
+        for i, tile in enumerate(tiles[-1]):
+            tiles[-1, i] = tile[:corner_tile_size[0]]
+    if tiles[0, -1].shape[-1] > corner_tile_size[1]:
+        for i, tile in enumerate(tiles[:, -1]):
+            tiles[i, -1] = tile[:, :corner_tile_size[1]]
+
+    return tiles
+
+
 def calculate_tiling(axis_size, tile_size, overlap_size):
 
     tiling = (axis_size - overlap_size) / (tile_size - overlap_size)

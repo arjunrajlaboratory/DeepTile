@@ -30,6 +30,7 @@ class DeepTile:
 
             func_process = base.transform(func_process)
 
+        tiles = utils.pad_tiles(tiles, self.tile_size)
         nonempty_indices = tuple(self.stitch_indices.keys())
         nonempty_tiles = tiles[tuple(zip(*nonempty_indices))]
 
@@ -56,6 +57,8 @@ class DeepTile:
 
                 processed_tile = func_process(tile)
                 processed_tiles[index] = processed_tile
+
+        processed_tiles = utils.unpad_tiles(processed_tiles, self.tile_indices)
 
         self._update_job_summary('process')
 
@@ -128,7 +131,6 @@ class DeepTileArray(DeepTile):
                                                                                       self.overlap)
         tiles = utils.array_split_2d(image, self.tile_indices)
         tiles = utils.cast_list_to_array(tiles)
-        tiles = utils.pad_tiles(tiles, self.tile_size)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
@@ -163,7 +165,6 @@ class DeepTileLargeImage(DeepTile):
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
         tiles, self.tiling, self.tile_indices, self.border_indices = \
             large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
-        tiles = utils.pad_tiles(tiles, self.tile_size)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
