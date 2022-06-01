@@ -110,8 +110,8 @@ def _find_border_blobs(masks, tile_indices, border_indices, z):
                 position_l, position_r = None, None
 
                 mask_l_all = masks[n_i, n_j]
-                mask_l_all = mask_l_all.reshape(-1, *mask_l_all.shape[-2:])
                 if mask_l_all is not None:
+                    mask_l_all = mask_l_all.reshape(-1, *mask_l_all.shape[-2:])
                     mask_l_all = mask_l_all[z]
                     if axis == 1:
                         mask_l_all = mask_l_all.T
@@ -121,8 +121,8 @@ def _find_border_blobs(masks, tile_indices, border_indices, z):
                     border_blobs = _scan_border(border_blobs, mask_l_all, (i, j[0]), position_l, border_index)
 
                 mask_r_all = masks[n_i, n_j + 1]
-                mask_r_all = mask_r_all.reshape(-1, *mask_r_all.shape[-2:])
                 if mask_r_all is not None:
+                    mask_r_all = mask_r_all.reshape(-1, *mask_r_all.shape[-2:])
                     mask_r_all = mask_r_all[z]
                     if axis == 1:
                         mask_r_all = mask_r_all.T
