@@ -1,5 +1,5 @@
 import numpy as np
-from deeptile import sources, utils
+from deeptile import utils
 
 
 class DeepTile:
@@ -144,9 +144,11 @@ class DeepTileLargeImage(DeepTile):
 
         self._check_configuration()
 
+        from deeptile.sources import large_image
+
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
         tiles, self.tiling, self.tile_indices, self.border_indices = \
-            sources.large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
+            large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
         tiles = utils.pad_tiles(tiles, self.tile_size)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
@@ -176,8 +178,10 @@ class DeepTileND2(DeepTile):
 
         self._check_configuration()
 
-        tiles, self.tiling, self.tile_size, self.overlap, self.image_shape = sources.nd2.parse(self.image, self.overlap,
-                                                                                               self.slices)
+        from deeptile.sources import nd2
+
+        tiles, self.tiling, self.tile_size, self.overlap, self.image_shape = nd2.parse(self.image, self.overlap,
+                                                                                       self.slices)
 
         _, self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tile_size,
                                                                             self.overlap)
