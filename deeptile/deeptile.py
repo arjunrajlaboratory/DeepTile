@@ -1,5 +1,6 @@
 import numpy as np
 from deeptile import utils
+from deeptile.algorithms import base
 
 
 class DeepTile:
@@ -21,27 +22,40 @@ class DeepTile:
         self.stitch_indices = None
         self.job_summary = None
 
-    def process(self, tiles, func_process):
+    def process(self, tiles, func_process, batch_size=None):
 
         self._check_configuration()
 
+        if not isinstance(func_process, base.AlgorithmBase):
+
+            func_process = base.transform(func_process)
+
+        nonempty_indices = tuple(self.stitch_indices.keys())
+        nonempty_tiles = tiles[tuple(zip(*nonempty_indices))]
+
         processed_tiles = np.zeros_like(tiles)
-        processed_tile_dims = None
 
-        for index, tile in np.ndenumerate(tiles):
+        if func_process.batch:
 
-            if tile is None:
-                processed_tile = None
-            else:
-                tile = tile.reshape(-1, *tile.shape[-2:])
+            if batch_size is None:
+                batch_size = func_process.default_batch_size
+
+            n_batches = np.ceil(len(nonempty_tiles) / batch_size).astype(int)
+
+            for n in range(n_batches):
+
+                batch_indices = nonempty_indices[n * batch_size:(n + 1) * batch_size]
+                batch_tiles = np.stack(nonempty_tiles[n * batch_size:(n + 1) * batch_size])
+
+                processed_batch_tiles = func_process(batch_tiles, batch_size=len(batch_tiles))
+                processed_tiles[tuple(zip(*batch_indices))] = tuple(processed_batch_tiles)
+
+        else:
+
+            for index, tile in zip(nonempty_indices, nonempty_tiles):
+
                 processed_tile = func_process(tile)
-                processed_tile = np.squeeze(processed_tile)
-                if processed_tile_dims is None:
-                    processed_tile_dims = processed_tile.shape[:-2]
-                if processed_tile.shape[:-2] != processed_tile_dims:
-                    raise ValueError("Processed tile dimension mismatch.")
-
-            processed_tiles[index] = processed_tile
+                processed_tiles[index] = processed_tile
 
         self._update_job_summary('process')
 
