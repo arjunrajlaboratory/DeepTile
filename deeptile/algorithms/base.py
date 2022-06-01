@@ -1,3 +1,6 @@
+from inspect import signature
+
+
 class AlgorithmBase:
 
     def __init__(self, batch, default_batch_size):
@@ -15,6 +18,13 @@ class AlgorithmBase:
         return Algorithm
 
 
-def transform(func, batch=False, default_batch_size=None):
+def transform(func, default_batch_size=None):
+
+    if 'batch_size' in signature(func).parameters.keys():
+        batch = True
+        if default_batch_size is None:
+            default_batch_size = 8
+    else:
+        batch = False
 
     return AlgorithmBase.set_func(func)(batch, default_batch_size)
