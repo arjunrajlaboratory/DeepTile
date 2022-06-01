@@ -1,11 +1,20 @@
-class Algorithm:
+class AlgorithmBase:
 
-    def __init__(self, func, batch=False, default_batch_size=None):
+    def __init__(self, batch, default_batch_size):
 
-        self.func = func
         self.batch = batch
         self.default_batch_size = default_batch_size
 
-    def __call__(self, *args, **kwargs):
+    @classmethod
+    def set_func(cls, func):
 
-        return self.func(*args, **kwargs)
+        class Algorithm(cls):
+
+            __call__ = staticmethod(func)
+
+        return Algorithm
+
+
+def transform(func, batch=False, default_batch_size=None):
+
+    return AlgorithmBase.set_func(func)(batch, default_batch_size)

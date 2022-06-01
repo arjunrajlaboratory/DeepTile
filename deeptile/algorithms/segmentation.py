@@ -1,5 +1,5 @@
 import numpy as np
-from deeptile.algorithms.base import Algorithm
+from deeptile.algorithms.base import transform
 
 
 def cellori_segmentation(model_parameters, eval_parameters):
@@ -13,7 +13,7 @@ def cellori_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = Algorithm(func_segment, batch=False)
+    func_segment = transform(func_segment, batch=False)
 
     return func_segment
 
@@ -33,7 +33,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = Algorithm(func_segment, batch=False)
+    func_segment = transform(func_segment, batch=False)
 
     return func_segment
 
@@ -55,7 +55,7 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = Algorithm(func_segment, batch=False)
+    func_segment = transform(func_segment, batch=False)
 
     return func_segment
 
@@ -75,7 +75,7 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = Algorithm(func_segment, batch=False)
+    func_segment = transform(func_segment, batch=False)
 
     return func_segment
 
@@ -95,7 +95,7 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = Algorithm(func_segment, batch=False)
+    func_segment = transform(func_segment, batch=False)
 
     return func_segment
 

@@ -1,5 +1,5 @@
 import numpy as np
-from deeptile.algorithms.base import Algorithm
+from deeptile.algorithms.base import transform
 from skimage import measure
 
 
@@ -18,7 +18,7 @@ def stitch_tiles():
 
         return stitch
 
-    func_stitch = Algorithm(func_stitch, batch=False)
+    func_stitch = transform(func_stitch, batch=False)
 
     return func_stitch
 
@@ -80,7 +80,7 @@ def stitch_masks():
 
         return stitched_mask
 
-    func_stitch = Algorithm(func_stitch, batch=False)
+    func_stitch = transform(func_stitch, batch=False)
 
     return func_stitch
 
