@@ -1,5 +1,5 @@
 import numpy as np
-from deeptile.algorithms.base import transform
+from deeptile.algorithms import transform
 
 
 def cellori_segmentation(model_parameters, eval_parameters):

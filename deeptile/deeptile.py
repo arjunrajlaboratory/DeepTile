@@ -1,6 +1,5 @@
 import numpy as np
-from deeptile import utils
-from deeptile.algorithms import base
+from deeptile import algorithms, utils
 
 
 class DeepTile:
@@ -26,9 +25,9 @@ class DeepTile:
 
         self._check_configuration()
 
-        if not isinstance(func_process, base.AlgorithmBase):
+        if not isinstance(func_process, algorithms.AlgorithmBase):
 
-            func_process = base.transform(func_process)
+            func_process = algorithms.transform(func_process)
 
         tiles = utils.pad_tiles(tiles, self.tile_size)
         nonempty_indices = tuple(self.stitch_indices.keys())
