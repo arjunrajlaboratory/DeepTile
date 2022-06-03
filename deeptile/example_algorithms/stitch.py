@@ -95,12 +95,12 @@ def _find_border_blobs(masks, tile_indices, border_indices, z):
         if axis == 1:
             masks = masks.T
 
-        for n_i in range(masks.shape[axis]):
+        for n_i in range(masks.shape[0]):
 
             i_image = border_indices[axis][n_i:n_i + 2]
             i = i_image - tile_indices[axis][n_i, 0]
 
-            for n_j in range(masks.shape[1 - axis] - 1):
+            for n_j in range(masks.shape[1] - 1):
 
                 j_image = np.flip(tile_indices_flat[1 - axis][2 * n_j + 1:2 * n_j + 3])
                 offset = tile_indices[1 - axis][n_j:n_j + 2, 0]
