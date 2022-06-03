@@ -22,6 +22,8 @@ def load(image):
 
 def from_array(image):
 
+    from deeptile.sources import array
+    image = array.read(image)
     dt = deeptile.DeepTileArray(image)
 
     return dt
