@@ -12,7 +12,7 @@ def cellori_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment, batch=False)
+    func_segment = transform(func_segment, vectorized=False)
 
     return func_segment
 
@@ -31,7 +31,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment, batch=False)
+    func_segment = transform(func_segment, vectorized=False)
 
     return func_segment
 
@@ -50,7 +50,7 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment, batch=True, default_batch_size=8)
+    func_segment = transform(func_segment, vectorized=True, default_batch_size=8)
 
     return func_segment
 
@@ -68,7 +68,7 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment, batch=True, default_batch_size=8)
+    func_segment = transform(func_segment, vectorized=True, default_batch_size=8)
 
     return func_segment
 
@@ -86,6 +86,6 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment, batch=True, default_batch_size=8)
+    func_segment = transform(func_segment, vectorized=True, default_batch_size=8)
 
     return func_segment

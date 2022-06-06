@@ -36,7 +36,9 @@ class DeepTile:
 
         processed_tiles = np.zeros_like(tiles)
 
-        if func_process.batch:
+        processed_tiles = np.empty_like(tiles)
+
+        if func_process.vectorized:
 
             if batch_size is None:
                 batch_size = func_process.default_batch_size

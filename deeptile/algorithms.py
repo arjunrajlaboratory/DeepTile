@@ -1,8 +1,8 @@
 class AlgorithmBase:
 
-    def __init__(self, batch, default_batch_size):
+    def __init__(self, vectorized, default_batch_size):
 
-        self.batch = batch
+        self.vectorized = vectorized
         self.default_batch_size = default_batch_size
 
     def __call__(self, tile):
@@ -19,9 +19,9 @@ class AlgorithmBase:
         return Algorithm
 
 
-def transform(func, batch, default_batch_size=8):
+def transform(func, vectorized, default_batch_size=8):
 
-    if not batch:
+    if not vectorized:
         default_batch_size = None
 
-    return AlgorithmBase.set_func(func)(batch, default_batch_size)
+    return AlgorithmBase.set_func(func)(vectorized, default_batch_size)
