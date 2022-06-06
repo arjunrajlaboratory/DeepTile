@@ -1,4 +1,5 @@
 import numpy as np
+from dask.array import Array
 from deeptile import utils
 from deeptile.algorithms import AlgorithmBase
 
@@ -48,12 +49,18 @@ class DeepTile:
                 batch_indices = nonempty_indices[n * batch_size:(n + 1) * batch_size]
                 batch_tiles = np.stack(nonempty_tiles[n * batch_size:(n + 1) * batch_size])
 
+                if isinstance(batch_tiles, Array):
+                    batch_tiles = batch_tiles.compute()
+
                 processed_batch_tiles = func_process(batch_tiles)
                 processed_tiles[tuple(zip(*batch_indices))] = tuple(processed_batch_tiles)
 
         else:
 
             for index, tile in zip(nonempty_indices, nonempty_tiles):
+
+                if isinstance(tile, Array):
+                    tile = tile.compute()
 
                 processed_tile = func_process(tile)
                 processed_tiles[index] = processed_tile
