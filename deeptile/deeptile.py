@@ -109,7 +109,7 @@ class DeepTileArray(DeepTile):
         super().__init__(image)
         self.image_type = 'array'
 
-    def configure(self, tile_size=(1024, 1024), overlap=(0.1, 0.1), slices=(slice(None))):
+    def configure(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None))):
 
         self._reset()
 
@@ -145,7 +145,7 @@ class DeepTileLargeImage(DeepTile):
         super().__init__(image)
         self.image_type = 'large_image'
 
-    def configure(self, tile_size=(1024, 1024), overlap=(0.1, 0.1), slices=0):
+    def configure(self, tile_size, overlap=(0.1, 0.1), slices=0):
 
         self._reset()
 
