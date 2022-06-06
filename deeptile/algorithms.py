@@ -1,12 +1,13 @@
-from inspect import signature
-
-
 class AlgorithmBase:
 
     def __init__(self, batch, default_batch_size):
 
         self.batch = batch
         self.default_batch_size = default_batch_size
+
+    def __call__(self, tile):
+
+        raise NotImplementedError("No callable function has been set.")
 
     @classmethod
     def set_func(cls, func):
@@ -18,13 +19,9 @@ class AlgorithmBase:
         return Algorithm
 
 
-def transform(func, default_batch_size=None):
+def transform(func, batch, default_batch_size=8):
 
-    if 'batch_size' in signature(func).parameters.keys():
-        batch = True
-        if default_batch_size is None:
-            default_batch_size = 8
-    else:
-        batch = False
+    if not batch:
+        default_batch_size = None
 
     return AlgorithmBase.set_func(func)(batch, default_batch_size)

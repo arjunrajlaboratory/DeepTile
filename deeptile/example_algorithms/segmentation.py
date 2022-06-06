@@ -12,7 +12,7 @@ def cellori_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment)
+    func_segment = transform(func_segment, batch=False)
 
     return func_segment
 
@@ -31,7 +31,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment)
+    func_segment = transform(func_segment, batch=False)
 
     return func_segment
 
@@ -42,15 +42,15 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
     model = Mesmer(**model_parameters)
 
-    def func_segment(tile, batch_size):
+    def func_segment(tile):
 
         tile = np.moveaxis(tile, 1, -1)
-        mask = model.predict(tile, batch_size=batch_size, **eval_parameters)
+        mask = model.predict(tile, batch_size=tile.shape[0], **eval_parameters)
         mask = np.moveaxis(mask, -1, 1)
 
         return mask
 
-    func_segment = transform(func_segment, default_batch_size=8)
+    func_segment = transform(func_segment, batch=True, default_batch_size=8)
 
     return func_segment
 
@@ -61,14 +61,14 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
     model = NuclearSegmentation(**model_parameters)
 
-    def func_segment(tile, batch_size):
+    def func_segment(tile):
 
         tile = np.expand_dims(tile, axis=-1)
-        mask = model.predict(tile, batch_size=batch_size, **eval_parameters)[:, :, :, 0]
+        mask = model.predict(tile, batch_size=tile.shape[0], **eval_parameters)[:, :, :, 0]
 
         return mask
 
-    func_segment = transform(func_segment, default_batch_size=8)
+    func_segment = transform(func_segment, batch=True, default_batch_size=8)
 
     return func_segment
 
@@ -79,13 +79,13 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
     model = CytoplasmSegmentation(**model_parameters)
 
-    def func_segment(tile, batch_size):
+    def func_segment(tile):
 
         tile = np.expand_dims(tile, axis=-1)
-        mask = model.predict(tile, batch_size=batch_size, **eval_parameters)[:, :, :, 0]
+        mask = model.predict(tile, batch_size=tile.shape[0], **eval_parameters)[:, :, :, 0]
 
         return mask
 
-    func_segment = transform(func_segment, default_batch_size=8)
+    func_segment = transform(func_segment, batch=True, default_batch_size=8)
 
     return func_segment

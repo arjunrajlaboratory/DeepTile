@@ -1,5 +1,6 @@
 import numpy as np
-from deeptile import algorithms, utils
+from deeptile import utils
+from deeptile.algorithms import AlgorithmBase
 
 
 class DeepTile:
@@ -25,9 +26,9 @@ class DeepTile:
 
         self._check_configuration()
 
-        if not isinstance(func_process, algorithms.AlgorithmBase):
+        if not isinstance(func_process, AlgorithmBase):
 
-            func_process = algorithms.transform(func_process)
+            raise TypeError("func_process must be transformed to an instance of the Algorithm class.")
 
         tiles = utils.pad_tiles(tiles, self.tile_size)
         nonempty_indices = tuple(self.stitch_indices.keys())
@@ -47,7 +48,7 @@ class DeepTile:
                 batch_indices = nonempty_indices[n * batch_size:(n + 1) * batch_size]
                 batch_tiles = np.stack(nonempty_tiles[n * batch_size:(n + 1) * batch_size])
 
-                processed_batch_tiles = func_process(batch_tiles, batch_size=len(batch_tiles))
+                processed_batch_tiles = func_process(batch_tiles)
                 processed_tiles[tuple(zip(*batch_indices))] = tuple(processed_batch_tiles)
 
         else:
