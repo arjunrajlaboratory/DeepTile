@@ -65,14 +65,6 @@ def axis_slice(ary, axis, start, end, step=1):
     return ary[(slice(None),) * (axis % ary.ndim) + (slice(start, end, step),)]
 
 
-def array_pad(ary, tile_size):
-
-    padding = (ary.ndim - 2) * ((0, 0), ) + ((0, tile_size[0] - ary.shape[-2]), (0, tile_size[1] - ary.shape[-1]))
-    ary = np.pad(ary, padding)
-
-    return ary
-
-
 def array_split(ary, indices, axis):
 
     sub_arys = [axis_slice(ary, axis, *i) for i in indices]
@@ -99,14 +91,22 @@ def cast_list_to_array(lst):
     return ary
 
 
+def pad_tile(tile, tile_size):
+
+    padding = (tile.ndim - 2) * ((0, 0), ) + ((0, tile_size[0] - tile.shape[-2]), (0, tile_size[1] - tile.shape[-1]))
+    tile = np.pad(tile, padding)
+
+    return tile
+
+
 def pad_tiles(tiles, tile_size):
 
     if tiles[-1, 0].shape[-2] < tile_size[0]:
         for i, tile in enumerate(tiles[-1]):
-            tiles[-1, i] = array_pad(tile, tile_size)
+            tiles[-1, i] = pad_tile(tile, tile_size)
     if tiles[0, -1].shape[-1] < tile_size[1]:
         for i, tile in enumerate(tiles[:-1, -1]):
-            tiles[i, -1] = array_pad(tile, tile_size)
+            tiles[i, -1] = pad_tile(tile, tile_size)
 
     return tiles
 
