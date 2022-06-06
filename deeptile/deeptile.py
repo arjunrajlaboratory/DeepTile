@@ -10,6 +10,7 @@ class DeepTile:
 
         self.image = image
         self.image_type = None
+        self.pad = None
 
         self.tiling = None
         self.tile_size = None
@@ -74,7 +75,8 @@ class DeepTile:
 
         self._check_configuration()
 
-        tiles = utils.unpad_tiles(tiles, self.tile_indices)
+        if self.pad:
+            tiles = utils.unpad_tiles(tiles, self.tile_indices)
         stitch = func_stitch(self, tiles)
 
         self._update_job_summary('stitch')
@@ -116,6 +118,7 @@ class DeepTileArray(DeepTile):
 
         super().__init__(image)
         self.image_type = 'array'
+        self.pad = True
 
     def configure(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None))):
 
@@ -153,6 +156,7 @@ class DeepTileLargeImage(DeepTile):
 
         super().__init__(image)
         self.image_type = 'large_image'
+        self.pad = True
 
     def configure(self, tile_size, overlap=(0.1, 0.1), slices=0):
 
@@ -188,6 +192,7 @@ class DeepTileND2(DeepTile):
 
         super().__init__(image)
         self.image_type = 'nd2'
+        self.pad = False
 
     def configure(self, overlap=(0.1, 0.1), slices=(slice(None))):
 
