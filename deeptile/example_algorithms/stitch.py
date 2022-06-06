@@ -18,7 +18,7 @@ def stitch_tiles():
 
         return stitch
 
-    func_stitch = transform(func_stitch)
+    func_stitch = transform(func_stitch, batch=False)
 
     return func_stitch
 
@@ -80,7 +80,7 @@ def stitch_masks():
 
         return stitched_mask
 
-    func_stitch = transform(func_stitch)
+    func_stitch = transform(func_stitch, batch=False)
 
     return func_stitch
 
