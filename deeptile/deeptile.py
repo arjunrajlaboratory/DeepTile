@@ -56,7 +56,6 @@ class DeepTile:
                 if pad_final_batch & batch_tiles.shape[0] < batch_size:
                     padding = ((0, batch_size - batch_tiles.shape[0]), ) + (batch_tiles.ndim - 1) * ((0, 0), )
                     batch_tiles = np.pad(batch_tiles, padding)
-                    print(batch_tiles.shape)
                 if isinstance(batch_tiles, Array):
                     batch_tiles = batch_tiles.compute()
 
