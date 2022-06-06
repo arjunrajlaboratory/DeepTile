@@ -49,6 +49,6 @@ def from_tiff(image):
 
     from deeptile.sources import tiff
     image = tiff.read(image)
-    dt = from_array(image)
+    dt = deeptile.DeepTileArray(image)
 
     return dt
