@@ -24,7 +24,7 @@ class DeepTile:
         self.stitch_indices = None
         self.job_summary = None
 
-    def process(self, tiles, func_process, batch_size=None):
+    def process(self, tiles, func_process, batch_size=None, batch_axis=None):
 
         self._check_configuration()
 
@@ -32,10 +32,13 @@ class DeepTile:
 
             raise TypeError("func_process must be transformed to an instance of the Algorithm class.")
 
-        nonempty_indices = tuple(self.stitch_indices.keys())
+        nonempty_indices = np.array(tuple(self.stitch_indices.keys()))
         nonempty_tiles = tiles[tuple(zip(*nonempty_indices))]
 
-        processed_tiles = np.zeros_like(tiles)
+        if batch_axis is not None:
+            batch_axis_len = nonempty_tiles[0].shape[batch_axis]
+            nonempty_indices = np.repeat(nonempty_indices, batch_axis_len, 0)
+            nonempty_tiles = [subtile for tile in nonempty_tiles for subtile in list(np.moveaxis(tile, batch_axis, 0))]
 
         processed_tiles = np.empty_like(tiles)
 
@@ -55,7 +58,10 @@ class DeepTile:
                     batch_tiles = batch_tiles.compute()
 
                 processed_batch_tiles = func_process(batch_tiles)
-                processed_tiles[tuple(zip(*batch_indices))] = tuple(processed_batch_tiles)
+
+                for index, processed_tile in zip(batch_indices, processed_batch_tiles):
+
+                    processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis)
 
         else:
 
@@ -65,7 +71,7 @@ class DeepTile:
                     tile = tile.compute()
 
                 processed_tile = func_process(tile)
-                processed_tiles[index] = processed_tile
+                processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis)
 
         self._update_job_summary('process')
 
