@@ -24,7 +24,7 @@ class DeepTile:
         self.stitch_indices = None
         self.job_summary = None
 
-    def process(self, tiles, func_process, batch_size=None, batch_axis=None):
+    def process(self, tiles, func_process, batch_axis=None, batch_size=None, pad_final_batch=False):
 
         self._check_configuration()
 
@@ -53,7 +53,10 @@ class DeepTile:
 
                 batch_indices = nonempty_indices[n * batch_size:(n + 1) * batch_size]
                 batch_tiles = np.stack(nonempty_tiles[n * batch_size:(n + 1) * batch_size])
-
+                if pad_final_batch & batch_tiles.shape[0] < batch_size:
+                    padding = ((0, batch_size - batch_tiles.shape[0]), ) + (batch_tiles.ndim - 1) * ((0, 0), )
+                    batch_tiles = np.pad(batch_tiles, padding)
+                    print(batch_tiles.shape)
                 if isinstance(batch_tiles, Array):
                     batch_tiles = batch_tiles.compute()
 
