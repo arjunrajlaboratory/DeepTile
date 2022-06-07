@@ -117,6 +117,8 @@ def pad_tiles(tiles, tile_size, tile_indices):
 
 def unpad_tiles(tiles, tile_padding):
 
+    tiles = tiles.copy()
+
     if tile_padding[0] > 0:
         for i, tile in enumerate(tiles[-1]):
             tiles[-1, i] = tile[..., :-tile_padding[0], :]
