@@ -1,23 +1,47 @@
 import numpy as np
 from deeptile.algorithms import transform
+from functools import partial
 from skimage import measure
 
 
-def stitch_tiles():
+def stitch_tiles(mode='tile', **kwargs):
 
-    def func_stitch(dt, tiles):
+    def func_stitch(dt, tiles, blending):
 
         first_tile = tiles[list(dt.stitch_indices.keys())[0]]
         dtype = first_tile.dtype
         stitch_shape = (*first_tile.shape[:-2], *dt.image_shape[-2:])
         stitch = np.zeros(stitch_shape, dtype=dtype)
 
-        for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
-            tile = tiles[n_i, n_j]
-            tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
-            stitch[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
+        if blending is None:
+
+            for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
+                tile = tiles[n_i, n_j]
+                tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
+                stitch[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
+
+        elif blending == 'sigmoid':
+
+            avg = np.zeros(stitch_shape[-2:])
+            taper = _generate_taper(dt.tile_size, dt.overlap, **kwargs)
+
+            for n_i, n_j in dt.stitch_indices.keys():
+                tile = tiles[n_i, n_j]
+                stitch_slice = np.s_[..., dt.tile_indices[0][n_i, 0]:dt.tile_indices[0][n_i, 1],
+                                     dt.tile_indices[1][n_j, 0]:dt.tile_indices[1][n_j, 1]]
+                taper_slice = np.s_[:tile.shape[-2], :tile.shape[-1]]
+                stitch[stitch_slice] = stitch[stitch_slice] + tile * taper[taper_slice]
+                avg[stitch_slice[1:]] = avg[stitch_slice[1:]] + taper[taper_slice]
+
+            stitch = stitch / (avg + 1e-07)
+            stitch = stitch.astype(dtype)
 
         return stitch
+
+    if mode == 'tile':
+        func_stitch = partial(func_stitch, blending=None)
+    elif mode == 'sigmoid':
+        func_stitch = partial(func_stitch, blending='sigmoid')
 
     func_stitch = transform(func_stitch, vectorized=False)
 
@@ -85,6 +109,19 @@ def stitch_masks():
     func_stitch = transform(func_stitch, vectorized=False)
 
     return func_stitch
+
+
+def _generate_taper(tile_size=(256, 256), overlap=(0.1, 0.1), sigma=10):
+
+    x = np.arange(tile_size[1])
+    x = np.abs(x - np.median(x))
+    y = np.arange(tile_size[0])
+    y = np.abs(y - np.median(y))
+    taperx = 1 / (1 + np.exp((x - tile_size[1] * (1 - overlap[1]) / 2) / sigma))
+    tapery = 1 / (1 + np.exp((y - tile_size[0] * (1 - overlap[0]) / 2) / sigma))
+    taper = tapery[:, None] * taperx
+
+    return taper
 
 
 def _find_border_blobs(masks, tile_indices, border_indices, z):
