@@ -48,7 +48,7 @@ def stitch_tiles(mode='tile', **kwargs):
     return func_stitch
 
 
-def stitch_masks():
+def stitch_masks(iou_threshold=0.1):
 
     def func_stitch(dt, masks):
 
@@ -96,7 +96,7 @@ def stitch_masks():
                                      s[1].stop + dt.tile_indices[1][n_j, 0]))
                     image_crop = stitched_mask[z][s_image]
 
-                    if not np.any(mask_crop & (image_crop > 0)):
+                    if _iou_score(mask_crop, image_crop > 0) < iou_threshold:
                         image_crop[mask_crop] = total_count + 1
                         total_count += 1
 
@@ -209,3 +209,8 @@ def _remove_blob(mask, blobs):
     mask[np.isin(mask, blobs)] = 0
 
     return mask
+
+
+def _iou_score(a, b):
+
+    return np.sum(a & b) / np.sum(a | b)
