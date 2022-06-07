@@ -22,7 +22,7 @@ class DeepTile:
         self.border_indices = None
         self.stitch_indices = None
         self.tile_padding = None
-        self.job_summary = None
+        self.job_log = {}
 
     def process(self, tiles, func_process, batch_axis=None, batch_size=None, pad_final_batch=False):
 
@@ -73,7 +73,7 @@ class DeepTile:
                 processed_tile = func_process(tile)
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis)
 
-        self._update_job_summary('process')
+        self._update_job_log('process')
 
         return processed_tiles
 
@@ -84,7 +84,7 @@ class DeepTile:
         tiles = utils.unpad_tiles(tiles, self.tile_padding)
         stitch = func_stitch(self, tiles)
 
-        self._update_job_summary('stitch')
+        self._update_job_log('stitch')
 
         return stitch
 
@@ -94,16 +94,16 @@ class DeepTile:
         self.tile_indices = None
         self.border_indices = None
         self.stitch_indices = None
-        self.job_summary = None
 
     def _check_configuration(self):
 
         if not self.configured:
             raise RuntimeError("DeepTile object not configured.")
 
-    def _update_job_summary(self, job_type):
+    def _update_job_log(self, job_type):
 
-        self.job_summary = {
+        n = len(self.job_log) + 1
+        self.job_log[n] = {
             'job_type': job_type,
             'image_type': self.image_type,
             'tiling': self.tiling,
@@ -113,7 +113,8 @@ class DeepTile:
             'image_shape': self.image_shape,
             'tile_indices': self.tile_indices,
             'border_indices': self.border_indices,
-            'stitch_indices': self.stitch_indices
+            'stitch_indices': self.stitch_indices,
+            'tile_padding': self.tile_padding
         }
 
 
@@ -149,7 +150,7 @@ class DeepTileArray(DeepTile):
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
-        self._update_job_summary('get_tiles')
+        self._update_job_log('get_tiles')
 
         return tiles
 
@@ -184,7 +185,7 @@ class DeepTileLargeImage(DeepTile):
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
-        self._update_job_summary('get_tiles')
+        self._update_job_log('get_tiles')
 
         return tiles
 
@@ -219,6 +220,6 @@ class DeepTileND2(DeepTile):
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
         self.tile_padding = (0, 0)
 
-        self._update_job_summary('get_tiles')
+        self._update_job_log('get_tiles')
 
         return tiles
