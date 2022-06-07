@@ -80,6 +80,14 @@ def array_split_2d(ary, indices):
     return sub_arys
 
 
+def array_pad(array, padding, axis=0):
+
+    pad_width = [(0, 0)] * array.ndim
+    pad_width[axis] = (0, padding)
+
+    return np.pad(array, pad_width)
+
+
 def cast_list_to_array(lst):
 
     ary = np.empty(shape=(len(lst), len(lst[0])), dtype=object)
@@ -91,36 +99,30 @@ def cast_list_to_array(lst):
     return ary
 
 
-def pad_tile(tile, tile_size):
+def pad_tiles(tiles, tile_size, tile_indices):
 
-    padding = (tile.ndim - 2) * ((0, 0), ) + ((0, tile_size[0] - tile.shape[-2]), (0, tile_size[1] - tile.shape[-1]))
-    tile = np.pad(tile, padding)
+    tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
+                    tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
 
-    return tile
-
-
-def pad_tiles(tiles, tile_size):
-
-    if tiles[-1, 0].shape[-2] < tile_size[0]:
+    if tile_padding[0] > 0:
         for i, tile in enumerate(tiles[-1]):
-            tiles[-1, i] = pad_tile(tile, tile_size)
-    if tiles[0, -1].shape[-1] < tile_size[1]:
-        for i, tile in enumerate(tiles[:-1, -1]):
-            tiles[i, -1] = pad_tile(tile, tile_size)
+            tiles[-1, i] = array_pad(tile, tile_padding[0], -2)
 
-    return tiles
-
-
-def unpad_tiles(tiles, tile_indices):
-
-    corner_tile_size = (tile_indices[0][-1, 1] - tile_indices[0][-1, 0],
-                        tile_indices[1][-1, 1] - tile_indices[1][-1, 0])
-    if tiles[-1, 0].shape[-2] > corner_tile_size[0]:
-        for i, tile in enumerate(tiles[-1]):
-            tiles[-1, i] = tile[..., :corner_tile_size[0], :]
-    if tiles[0, -1].shape[-1] > corner_tile_size[1]:
+    if tile_padding[1] > 0:
         for i, tile in enumerate(tiles[:, -1]):
-            tiles[i, -1] = tile[..., :corner_tile_size[1]]
+            tiles[i, -1] = array_pad(tile, tile_padding[1], -1)
+
+    return tiles, tile_padding
+
+
+def unpad_tiles(tiles, tile_padding):
+
+    if tile_padding[0] > 0:
+        for i, tile in enumerate(tiles[-1]):
+            tiles[-1, i] = tile[..., :-tile_padding[0], :]
+    if tile_padding[1] > 0:
+        for i, tile in enumerate(tiles[:, -1]):
+            tiles[i, -1] = tile[..., :-tile_padding[1]]
 
     return tiles
 

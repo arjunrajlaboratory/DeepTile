@@ -10,7 +10,6 @@ class DeepTile:
 
         self.image = image
         self.image_type = None
-        self.pad = None
 
         self.tiling = None
         self.tile_size = None
@@ -22,6 +21,7 @@ class DeepTile:
         self.tile_indices = None
         self.border_indices = None
         self.stitch_indices = None
+        self.tile_padding = None
         self.job_summary = None
 
     def process(self, tiles, func_process, batch_axis=None, batch_size=None, pad_final_batch=False):
@@ -29,7 +29,6 @@ class DeepTile:
         self._check_configuration()
 
         if not isinstance(func_process, AlgorithmBase):
-
             raise TypeError("func_process must be transformed to an instance of the Algorithm class.")
 
         nonempty_indices = np.array(tuple(self.stitch_indices.keys()))
@@ -53,9 +52,8 @@ class DeepTile:
 
                 batch_indices = nonempty_indices[n * batch_size:(n + 1) * batch_size]
                 batch_tiles = np.stack(nonempty_tiles[n * batch_size:(n + 1) * batch_size])
-                if pad_final_batch & batch_tiles.shape[0] < batch_size:
-                    padding = ((0, batch_size - batch_tiles.shape[0]), ) + (batch_tiles.ndim - 1) * ((0, 0), )
-                    batch_tiles = np.pad(batch_tiles, padding)
+                if pad_final_batch & (batch_tiles.shape[0] < batch_size):
+                    batch_tiles = utils.array_pad(batch_tiles, batch_size - batch_tiles.shape[0], 0)
                 if isinstance(batch_tiles, Array):
                     batch_tiles = batch_tiles.compute()
 
@@ -83,8 +81,7 @@ class DeepTile:
 
         self._check_configuration()
 
-        if self.pad:
-            tiles = utils.unpad_tiles(tiles, self.tile_indices)
+        tiles = utils.unpad_tiles(tiles, self.tile_padding)
         stitch = func_stitch(self, tiles)
 
         self._update_job_summary('stitch')
@@ -126,7 +123,6 @@ class DeepTileArray(DeepTile):
 
         super().__init__(image)
         self.image_type = 'array'
-        self.pad = True
 
     def configure(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None))):
 
@@ -149,7 +145,7 @@ class DeepTileArray(DeepTile):
                                                                                       self.overlap)
         tiles = utils.array_split_2d(image, self.tile_indices)
         tiles = utils.cast_list_to_array(tiles)
-        tiles = utils.pad_tiles(tiles, self.tile_size)
+        tiles, self.tile_padding = utils.pad_tiles(tiles, self.tile_size, self.tile_indices)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
@@ -164,7 +160,6 @@ class DeepTileLargeImage(DeepTile):
 
         super().__init__(image)
         self.image_type = 'large_image'
-        self.pad = True
 
     def configure(self, tile_size, overlap=(0.1, 0.1), slices=0):
 
@@ -185,7 +180,7 @@ class DeepTileLargeImage(DeepTile):
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
         tiles, self.tiling, self.tile_indices, self.border_indices = \
             large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
-        tiles = utils.pad_tiles(tiles, self.tile_size)
+        tiles, self.tile_padding = utils.pad_tiles(tiles, self.tile_size, self.tile_indices)
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
@@ -200,7 +195,6 @@ class DeepTileND2(DeepTile):
 
         super().__init__(image)
         self.image_type = 'nd2'
-        self.pad = False
 
     def configure(self, overlap=(0.1, 0.1), slices=(slice(None))):
 
@@ -223,6 +217,7 @@ class DeepTileND2(DeepTile):
         _, self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tile_size,
                                                                             self.overlap)
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
+        self.tile_padding = (0, 0)
 
         self._update_job_summary('get_tiles')
 
