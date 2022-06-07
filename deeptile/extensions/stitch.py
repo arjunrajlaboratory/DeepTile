@@ -3,7 +3,7 @@ from deeptile.algorithms import transform
 from skimage import measure
 
 
-def stitch_tiles(blend=True, sigma=10):
+def stitch_tiles(blend=True, sigma=5):
 
     def func_stitch(dt, tiles):
 
