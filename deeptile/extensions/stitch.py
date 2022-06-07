@@ -1,29 +1,21 @@
 import numpy as np
 from deeptile.algorithms import transform
-from functools import partial
 from skimage import measure
 
 
-def stitch_tiles(mode='tile', **kwargs):
+def stitch_tiles(blend=True, sigma=10):
 
-    def func_stitch(dt, tiles, blending):
+    def func_stitch(dt, tiles):
 
         first_tile = tiles[list(dt.stitch_indices.keys())[0]]
         dtype = first_tile.dtype
         stitch_shape = (*first_tile.shape[:-2], *dt.image_shape[-2:])
         stitch = np.zeros(stitch_shape, dtype=dtype)
 
-        if blending is None:
-
-            for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
-                tile = tiles[n_i, n_j]
-                tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
-                stitch[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
-
-        elif blending == 'sigmoid':
+        if blend:
 
             avg = np.zeros(stitch_shape[-2:])
-            taper = _generate_taper(dt.tile_size, dt.overlap, **kwargs)
+            taper = _generate_taper(dt.tile_size, dt.overlap, sigma)
 
             for n_i, n_j in dt.stitch_indices.keys():
                 tile = tiles[n_i, n_j]
@@ -36,12 +28,14 @@ def stitch_tiles(mode='tile', **kwargs):
             stitch = stitch / (avg + 1e-07)
             stitch = stitch.astype(dtype)
 
-        return stitch
+        else:
 
-    if mode == 'tile':
-        func_stitch = partial(func_stitch, blending=None)
-    elif mode == 'sigmoid':
-        func_stitch = partial(func_stitch, blending='sigmoid')
+            for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
+                tile = tiles[n_i, n_j]
+                tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
+                stitch[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
+
+        return stitch
 
     func_stitch = transform(func_stitch, vectorized=False)
 
@@ -111,7 +105,7 @@ def stitch_masks(iou_threshold=0.1):
     return func_stitch
 
 
-def _generate_taper(tile_size=(256, 256), overlap=(0.1, 0.1), sigma=10):
+def _generate_taper(tile_size, overlap, sigma):
 
     x = np.arange(tile_size[1])
     x = np.abs(x - np.median(x))
