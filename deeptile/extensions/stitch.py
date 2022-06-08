@@ -10,7 +10,7 @@ def stitch_tiles(blend=True, sigma=5):
         first_tile = tiles[list(dt.stitch_indices.keys())[0]]
         dtype = first_tile.dtype
         stitch_shape = (*first_tile.shape[:-2], *dt.image_shape[-2:])
-        stitch = np.zeros(stitch_shape, dtype=dtype)
+        stitched = np.zeros(stitch_shape)
 
         if blend:
 
@@ -22,20 +22,20 @@ def stitch_tiles(blend=True, sigma=5):
                 stitch_slice = np.s_[..., dt.tile_indices[0][n_i, 0]:dt.tile_indices[0][n_i, 1],
                                      dt.tile_indices[1][n_j, 0]:dt.tile_indices[1][n_j, 1]]
                 taper_slice = np.s_[:tile.shape[-2], :tile.shape[-1]]
-                stitch[stitch_slice] = stitch[stitch_slice] + tile * taper[taper_slice]
+                stitched[stitch_slice] = stitched[stitch_slice] + tile * taper[taper_slice]
                 avg[stitch_slice[1:]] = avg[stitch_slice[1:]] + taper[taper_slice]
 
-            stitch = stitch / (avg + 1e-07)
-            stitch = stitch.astype(dtype)
+            stitched = stitched / avg
+            stitched = stitched.astype(dtype)
 
         else:
 
             for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
                 tile = tiles[n_i, n_j]
                 tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
-                stitch[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
+                stitched[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
 
-        return stitch
+        return stitched
 
     func_stitch = transform(func_stitch, vectorized=False)
 
