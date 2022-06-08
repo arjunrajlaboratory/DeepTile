@@ -4,6 +4,21 @@ from deeptile.algorithms import transform
 
 def cellori_segmentation(model_parameters, eval_parameters):
 
+    """ Generate Algorithm object for the Cellori segmentation algorithm.
+
+    Parameters
+    ----------
+        model_parameters : dict
+            Dictionary of model parameters.
+        eval_parameters : dict
+            Dictionary of evaluation parameters.
+
+    Returns
+    -------
+        func_segment : Algorithm
+            Algorithm object with Cellori as the callable.
+    """
+
     from cellori import Cellori
 
     def func_segment(tile):
@@ -18,6 +33,21 @@ def cellori_segmentation(model_parameters, eval_parameters):
 
 
 def cellpose_segmentation(model_parameters, eval_parameters):
+
+    """ Generate Algorithm object for the Cellpose segmentation algorithm.
+
+    Parameters
+    ----------
+        model_parameters : dict
+            Dictionary of model parameters.
+        eval_parameters : dict
+            Dictionary of evaluation parameters.
+
+    Returns
+    -------
+        func_segment : Algorithm
+            Algorithm object with Cellpose as the callable.
+    """
 
     from cellpose.models import Cellpose
     from cellpose.io import logger_setup
@@ -38,6 +68,21 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
 def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
+    """ Generate Algorithm object for the DeepCell Mesmer segmentation algorithm.
+
+    Parameters
+    ----------
+        model_parameters : dict
+            Dictionary of model parameters.
+        eval_parameters : dict
+            Dictionary of evaluation parameters.
+
+    Returns
+    -------
+        func_segment : Algorithm
+            Algorithm object with DeepCell Mesmer as the callable.
+    """
+
     from deepcell.applications import Mesmer
 
     model = Mesmer(**model_parameters)
@@ -57,6 +102,21 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
 def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
+    """ Generate Algorithm object for the DeepCell Nuclear segmentation algorithm.
+
+    Parameters
+    ----------
+        model_parameters : dict
+            Dictionary of model parameters.
+        eval_parameters : dict
+            Dictionary of evaluation parameters.
+
+    Returns
+    -------
+        func_segment : Algorithm
+            Algorithm object with DeepCell Nuclear as the callable.
+    """
+
     from deepcell.applications import NuclearSegmentation
 
     model = NuclearSegmentation(**model_parameters)
@@ -74,6 +134,21 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
 
 def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
+
+    """ Generate Algorithm object for the DeepCell Cytoplasm segmentation algorithm.
+
+    Parameters
+    ----------
+        model_parameters : dict
+            Dictionary of model parameters.
+        eval_parameters : dict
+            Dictionary of evaluation parameters.
+
+    Returns
+    -------
+        func_segment : Algorithm
+            Algorithm object with DeepCell Cytoplasm as the callable.
+    """
 
     from deepcell.applications import CytoplasmSegmentation
 

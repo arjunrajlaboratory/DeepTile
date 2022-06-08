@@ -6,6 +6,14 @@ from deeptile.algorithms import AlgorithmBase
 
 class DeepTile:
 
+    """ Base DeepTile class that handles tile processing and stitching.
+
+    Parameters
+    ----------
+        image
+            An object containing an image.
+    """
+
     def __init__(self, image):
 
         self.image = image
@@ -25,6 +33,34 @@ class DeepTile:
         self.job_log = {}
 
     def process(self, tiles, func_process, batch_axis=None, batch_size=None, pad_final_batch=False):
+
+        """ Process tiles using a transformed function.
+
+        Parameters
+        ----------
+            tiles : numpy.array
+                Array of tiles.
+            func_process : Algorithm
+                Processing function transformed into an Algorithm object.
+            batch_axis : int or None, optional, default None
+                Image axis used to create batches during processing. If ``None``, no batch axis will be used.
+            batch_size : int or None, optional, default None
+                Number of tiles in each batch. If ``None``, the default batching configuration will be determined by
+                ``func_process``. If ``func_process`` is not vectorized, this value is ignored.
+            pad_final_batch : bool, optional, default False
+                Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` is not vectorized,
+                this value is ignored.
+
+        Returns
+        -------
+            processed_tiles : numpy.ndarray
+                Array of tiles after processing with ``func_process``.
+
+        Raises
+        ------
+            TypeError
+                If ``func_process`` has not been transformed to an instance of the Algorithm class.
+        """
 
         self._check_configuration()
 
@@ -79,16 +115,42 @@ class DeepTile:
 
     def stitch(self, tiles, func_stitch):
 
+        """ Stitch tiles using a transformed function.
+
+        Parameters
+        ----------
+            tiles : numpy.array
+                Array of tiles.
+            func_stitch : Algorithm
+                Stitching function transformed into an Algorithm object.
+
+        Returns
+        -------
+            stitched : numpy.ndarray
+                Stitched array.
+
+        Raises
+        ------
+            TypeError
+                If ``func_stitch`` has not been transformed to an instance of the Algorithm class.
+        """
+
         self._check_configuration()
 
+        if not isinstance(func_stitch, AlgorithmBase):
+            raise TypeError("func_stitch must be transformed to an instance of the Algorithm class.")
+
         tiles = utils.unpad_tiles(tiles, self.tile_padding)
-        stitch = func_stitch(self, tiles)
+        stitched = func_stitch(self, tiles)
 
         self._update_job_log('stitch')
 
-        return stitch
+        return stitched
 
     def _reset(self):
+
+        """ (For internal use) Reset DeepTile object.
+        """
 
         self.image_shape = None
         self.tile_indices = None
@@ -97,10 +159,26 @@ class DeepTile:
 
     def _check_configuration(self):
 
+        """ (For internal use) Check if DeepTile object is configured.
+
+        Raises
+        ------
+            RuntimeError
+                If ``DeepTile`` object has not been configured.
+        """
+
         if not self.configured:
             raise RuntimeError("DeepTile object not configured.")
 
     def _update_job_log(self, job_type):
+
+        """ (For internal use) Update job log.
+
+        Parameters
+        ----------
+            job_type : str
+                Type of job.
+        """
 
         n = len(self.job_log) + 1
         self.job_log[n] = {
@@ -120,12 +198,32 @@ class DeepTile:
 
 class DeepTileArray(DeepTile):
 
+    """ DeepTile subclass for arrays.
+
+    Parameters
+    ----------
+        image : array_like
+            An array-like object of an image.
+    """
+
     def __init__(self, image):
 
         super().__init__(image)
         self.image_type = 'array'
 
     def configure(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None))):
+
+        """ Configure DeepTileArray object.
+
+        Parameters
+        ----------
+            tile_size : tuple
+                Size of each tile.
+            overlap : tuple, optional, default (0.1, 0.1)
+                Fractions of ``tile_size`` to use for overlap.
+            slices : tuple, optional, default (slice(None))
+                Tuple of slice objects designating slices to be extracted.
+        """
 
         self._reset()
 
@@ -136,6 +234,14 @@ class DeepTileArray(DeepTile):
         self.configured = True
 
     def get_tiles(self):
+
+        """ Split array into tiles.
+
+        Returns
+        -------
+            tiles : numpy.ndarray
+                Array of tiles.
+        """
 
         self._check_configuration()
 
@@ -157,12 +263,32 @@ class DeepTileArray(DeepTile):
 
 class DeepTileLargeImage(DeepTile):
 
+    """ DeepTile subclass for large_image tile sources.
+
+    Parameters
+    ----------
+        image : large_image tile source
+            A large_image tile source.
+    """
+
     def __init__(self, image):
 
         super().__init__(image)
         self.image_type = 'large_image'
 
     def configure(self, tile_size, overlap=(0.1, 0.1), slices=0):
+
+        """ Configure DeepTileLargeImage object.
+
+        Parameters
+        ----------
+            tile_size : tuple
+                Size of each tile.
+            overlap : tuple, optional, default (0.1, 0.1)
+                Fractions of ``tile_size`` to use for overlap.
+            slices : int, optional, default 0
+                Frame index designating frame to be extracted.
+        """
 
         self._reset()
 
@@ -173,6 +299,14 @@ class DeepTileLargeImage(DeepTile):
         self.configured = True
 
     def get_tiles(self):
+
+        """ Obtain tiles from large_image tile source.
+
+        Returns
+        -------
+            tiles : numpy.ndarray
+                Array of tiles.
+        """
 
         self._check_configuration()
 
@@ -192,12 +326,30 @@ class DeepTileLargeImage(DeepTile):
 
 class DeepTileND2(DeepTile):
 
+    """ DeepTile subclass for ND2 files.
+
+    Parameters
+    ----------
+        image : ND2 file
+            An ND2 file.
+    """
+
     def __init__(self, image):
 
         super().__init__(image)
         self.image_type = 'nd2'
 
     def configure(self, overlap=(0.1, 0.1), slices=(slice(None))):
+
+        """ Configure DeepTileND2 object.
+
+        Parameters
+        ----------
+            overlap : tuple or None, optional, default (0.1, 0.1)
+                Fractions to use for overlap. If ``None``, overlap is automatically determined from the ND2 metadata.
+            slices : tuple, optional, default (slice(None))
+                Tuple of slice objects designating slices to be extracted.
+        """
 
         self._reset()
 
@@ -207,6 +359,14 @@ class DeepTileND2(DeepTile):
         self.configured = True
 
     def get_tiles(self):
+
+        """ Obtain tiles from ND2 file.
+
+        Returns
+        -------
+            tiles : numpy.ndarray
+                Array of tiles.
+        """
 
         self._check_configuration()
 

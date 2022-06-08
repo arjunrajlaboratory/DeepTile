@@ -5,6 +5,22 @@ from skimage import measure
 
 def stitch_tiles(blend=True, sigma=5):
 
+    """ Generate Algorithm object for a tile stitching algorithm.
+
+    Parameters
+    ----------
+        blend : bool, optional, default True
+            Whether to blend tile overlaps.
+        sigma : int, optional, default 5
+            Sigma bandwidth parameter used to generate sigmoid taper for blending. If ``blend`` is ``False``, this value
+            is ignored.
+
+    Returns
+    -------
+        func_stitch : Algorithm
+            Algorithm object with a tile stitching algorithm as the callable.
+    """
+
     def func_stitch(dt, tiles):
 
         first_tile = tiles[list(dt.stitch_indices.keys())[0]]
@@ -43,6 +59,19 @@ def stitch_tiles(blend=True, sigma=5):
 
 
 def stitch_masks(iou_threshold=0.1):
+
+    """ Generate Algorithm object for a mask stitching algorithm.
+
+    Parameters
+    ----------
+        iou_threshold : float, optional, default 0.1
+            IOU score threshold used for mask stitching at tile borders.
+
+    Returns
+    -------
+        func_stitch : Algorithm
+            Algorithm object with a mask stitching algorithm as the callable.
+    """
 
     def func_stitch(dt, masks):
 
@@ -90,7 +119,7 @@ def stitch_masks(iou_threshold=0.1):
                                      s[1].stop + dt.tile_indices[1][n_j, 0]))
                     image_crop = stitched_mask[z][s_image]
 
-                    if _iou_score(mask_crop, image_crop > 0) < iou_threshold:
+                    if _calculate_iou_score(mask_crop, image_crop > 0) < iou_threshold:
                         image_crop[mask_crop] = total_count + 1
                         total_count += 1
 
@@ -107,6 +136,23 @@ def stitch_masks(iou_threshold=0.1):
 
 def _generate_taper(tile_size, overlap, sigma):
 
+    """ (For internal use) Generate taper used for blending tile overlaps.
+
+    Parameters
+    ----------
+        tile_size : tuple
+            Size of each tile.
+        overlap : tuple
+            Fractions of ``tile_size`` to use for overlap.
+        sigma : int
+            Sigma bandwidth parameter.
+
+    Returns
+    -------
+        taper : numpy.array
+            Taper used for blending tile overlaps.
+    """
+
     x = np.arange(tile_size[1])
     x = np.abs(x - np.median(x))
     y = np.arange(tile_size[0])
@@ -116,6 +162,28 @@ def _generate_taper(tile_size, overlap, sigma):
     taper = tapery[:, None] * taperx
 
     return taper
+
+
+def _calculate_iou_score(a, b):
+
+    """ (For internal use) Calculate IOU score.
+
+    Parameters
+    ----------
+        a : numpy.array
+            Boolean array containing object A.
+        b : numpy.array
+            Boolean array containing object B.
+
+    Returns
+    -------
+        iou_score : float
+            IOU score for objects A and B.
+    """
+
+    iou_score = np.sum(a & b) / np.sum(a | b)
+
+    return iou_score
 
 
 def _find_border_blobs(masks, tile_indices, border_indices, z):
@@ -203,8 +271,3 @@ def _remove_blob(mask, blobs):
     mask[np.isin(mask, blobs)] = 0
 
     return mask
-
-
-def _iou_score(a, b):
-
-    return np.sum(a & b) / np.sum(a | b)
