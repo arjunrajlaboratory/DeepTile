@@ -97,7 +97,8 @@ class DeepTile:
 
                 for index, processed_tile in zip(batch_indices, processed_batch_tiles):
 
-                    processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis)
+                    processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
+                                                         func_process.static_output_shape)
 
         else:
 
@@ -107,7 +108,8 @@ class DeepTile:
                     tile = tile.compute()
 
                 processed_tile = func_process(tile)
-                processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis)
+                processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
+                                                     func_process.static_output_shape)
 
         self._update_job_log('process')
 

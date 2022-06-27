@@ -129,16 +129,25 @@ def unpad_tiles(tiles, tile_padding):
     return tiles
 
 
-def update_tiles(tiles, index, tile, batch_axis):
-
-    current_tile = tiles[index]
+def update_tiles(tiles, index, tile, batch_axis, static_output_shape):
 
     if batch_axis is None:
         tiles[index] = tile
     else:
+        current_tile = tiles[index]
         if isinstance(current_tile, np.ndarray):
-            tiles[index] = np.concatenate((current_tile, np.expand_dims(tile, batch_axis)), batch_axis)
+            if static_output_shape:
+                tiles[index] = np.concatenate((current_tile, np.expand_dims(tile, batch_axis)), batch_axis)
+            else:
+                new_tile = np.empty((1, ), dtype=object)
+                new_tile[0] = tile
+                tiles[index] = np.concatenate((current_tile, new_tile), 0)
         else:
-            tiles[index] = np.expand_dims(tile, batch_axis)
+            if static_output_shape:
+                tiles[index] = np.expand_dims(tile, batch_axis)
+            else:
+                new_tile = np.empty((1, ), dtype=object)
+                new_tile[0] = tile
+                tiles[index] = new_tile
 
     return tiles
