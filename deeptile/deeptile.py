@@ -2,6 +2,7 @@ import numpy as np
 from dask.array import Array
 from deeptile import utils
 from deeptile.algorithms import AlgorithmBase
+from deeptile.data import Tiled, Stitched
 
 
 class DeepTile:
@@ -38,7 +39,7 @@ class DeepTile:
 
         Parameters
         ----------
-            tiles : numpy.array
+            tiles : Tiled
                 Array of tiles.
             func_process : Algorithm
                 Processing function transformed into an Algorithm object.
@@ -53,19 +54,12 @@ class DeepTile:
 
         Returns
         -------
-            processed_tiles : numpy.ndarray
+            processed_tiles : Tiled
                 Array of tiles after processing with ``func_process``.
-
-        Raises
-        ------
-            TypeError
-                If ``func_process`` has not been transformed to an instance of the Algorithm class.
         """
 
         self._check_configuration()
-
-        if not isinstance(func_process, AlgorithmBase):
-            raise TypeError("func_process must be transformed to an instance of the Algorithm class.")
+        self._check_compatibility(tiles, func_process, 'process')
 
         nonempty_indices = np.array(tuple(self.stitch_indices.keys()))
         nonempty_tiles = tiles[tuple(zip(*nonempty_indices))]
@@ -97,8 +91,8 @@ class DeepTile:
 
                 for index, processed_tile in zip(batch_indices, processed_batch_tiles):
 
-                    processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
-                                                         func_process.static_output_shape)
+                    processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile,
+                                                         batch_axis, func_process.output_type)
 
         else:
 
@@ -108,8 +102,10 @@ class DeepTile:
                     tile = tile.compute()
 
                 processed_tile = func_process(tile)
-                processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
-                                                     func_process.static_output_shape)
+                processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile,
+                                                     batch_axis, func_process.output_type)
+
+        processed_tiles = Tiled(processed_tiles, self, func_process.output_type)
 
         self._update_job_log('process')
 
@@ -121,29 +117,25 @@ class DeepTile:
 
         Parameters
         ----------
-            tiles : numpy.array
+            tiles : Tiled
                 Array of tiles.
             func_stitch : Algorithm
                 Stitching function transformed into an Algorithm object.
 
         Returns
         -------
-            stitched : numpy.ndarray
+            stitched : Stitched
                 Stitched array.
-
-        Raises
-        ------
-            TypeError
-                If ``func_stitch`` has not been transformed to an instance of the Algorithm class.
         """
 
         self._check_configuration()
+        self._check_compatibility(tiles, func_stitch, 'stitch')
 
-        if not isinstance(func_stitch, AlgorithmBase):
-            raise TypeError("func_stitch must be transformed to an instance of the Algorithm class.")
+        if tiles.otype == 'tiled_image':
+            tiles = utils.unpad_tiles(tiles, self.tile_padding)
 
-        tiles = utils.unpad_tiles(tiles, self.tile_padding)
         stitched = func_stitch(self, tiles)
+        stitched = Stitched(stitched, self, func_stitch.output_type)
 
         self._update_job_log('stitch')
 
@@ -171,6 +163,40 @@ class DeepTile:
 
         if not self.configured:
             raise RuntimeError("DeepTile object not configured.")
+
+    @staticmethod
+    def _check_compatibility(tiles, func, job_type):
+
+        """ (For internal use) Check if the given tiles and func are compatible.
+
+        Parameters
+        ----------
+            tiles : Tiled
+                Array of tiles.
+            func : Algorithm
+                Function transformed into an Algorithm object.
+            job_type : str
+                Type of job.
+
+        Raises
+        ------
+            TypeError
+                If ``func`` has not been transformed to an instance of the Algorithm class.
+            TypeError
+                If ``func`` has the incorrect algorithm type.
+            ValueError
+                If ``tiles`` and ``func`` are not compatible.
+        """
+
+        if not isinstance(func, AlgorithmBase):
+            raise TypeError(f"func_{job_type} must be transformed to an instance of the Algorithm class.")
+
+        if func.algorithm_type != job_type:
+            raise TypeError(f"func_{job_type} has the incorrect algorithm type of {func.algorithm_type}.")
+
+        if tiles.otype != func.input_type:
+            raise ValueError(f"Tile object type {tiles.otype} does not match the expected "
+                             f"function input object type {func.input_type}.")
 
     def _update_job_log(self, job_type):
 
@@ -241,7 +267,7 @@ class DeepTileArray(DeepTile):
 
         Returns
         -------
-            tiles : numpy.ndarray
+            tiles : Tiled
                 Array of tiles.
         """
 
@@ -255,6 +281,7 @@ class DeepTileArray(DeepTile):
         tiles = utils.array_split_2d(image, self.tile_indices)
         tiles = utils.cast_list_to_array(tiles)
         tiles, self.tile_padding = utils.pad_tiles(tiles, self.tile_size, self.tile_indices)
+        tiles = Tiled(tiles, self, 'tiled_image')
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
@@ -306,7 +333,7 @@ class DeepTileLargeImage(DeepTile):
 
         Returns
         -------
-            tiles : numpy.ndarray
+            tiles : Tiled
                 Array of tiles.
         """
 
@@ -318,6 +345,7 @@ class DeepTileLargeImage(DeepTile):
         tiles, self.tiling, self.tile_indices, self.border_indices = \
             large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
         tiles, self.tile_padding = utils.pad_tiles(tiles, self.tile_size, self.tile_indices)
+        tiles = Tiled(tiles, self, 'tiled_image')
 
         self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
 
@@ -366,7 +394,7 @@ class DeepTileND2(DeepTile):
 
         Returns
         -------
-            tiles : numpy.ndarray
+            tiles : Tiled
                 Array of tiles.
         """
 
@@ -376,6 +404,7 @@ class DeepTileND2(DeepTile):
 
         tiles, self.tiling, self.tile_size, self.overlap, self.image_shape = nd2.parse(self.image, self.overlap,
                                                                                        self.slices)
+        tiles = Tiled(tiles, self, 'tiled_image')
 
         _, self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tile_size,
                                                                             self.overlap)

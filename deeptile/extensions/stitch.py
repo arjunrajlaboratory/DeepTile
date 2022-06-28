@@ -53,7 +53,7 @@ def stitch_tiles(blend=True, sigma=5):
 
         return stitched
 
-    func_stitch = transform(func_stitch, vectorized=False)
+    func_stitch = transform(func_stitch, vectorized=False, output_type='stitched_image')
 
     return func_stitch
 
@@ -129,7 +129,7 @@ def stitch_masks(iou_threshold=0.1):
 
         return stitched_mask
 
-    func_stitch = transform(func_stitch, vectorized=False)
+    func_stitch = transform(func_stitch, vectorized=False, output_type='stitched_image')
 
     return func_stitch
 
