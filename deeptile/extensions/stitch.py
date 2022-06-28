@@ -21,8 +21,9 @@ def stitch_tiles(blend=True, sigma=5):
             Algorithm object with a tile stitching algorithm as the callable.
     """
 
-    def func_stitch(dt, tiles):
+    def func_stitch(tiles):
 
+        dt = tiles.dt
         first_tile = tiles[list(dt.stitch_indices.keys())[0]]
         dtype = first_tile.dtype
         stitch_shape = (*first_tile.shape[:-2], *dt.image_shape[-2:])
@@ -73,8 +74,9 @@ def stitch_masks(iou_threshold=0.1):
             Algorithm object with a mask stitching algorithm as the callable.
     """
 
-    def func_stitch(dt, masks):
+    def func_stitch(masks):
 
+        dt = masks.dt
         first_mask = masks[list(dt.stitch_indices.keys())[0]]
         mask_shape = (*first_mask.shape[:-2], *dt.image_shape[-2:])
         mask_flat_shape = (np.prod(mask_shape[:-2], dtype=int), *mask_shape[-2:])

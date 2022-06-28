@@ -134,7 +134,7 @@ class DeepTile:
         if tiles.otype == 'tiled_image':
             tiles = utils.unpad_tiles(tiles, self.tile_padding)
 
-        stitched = func_stitch(self, tiles)
+        stitched = func_stitch(tiles)
         stitched = Stitched(stitched, self, func_stitch.output_type)
 
         self._update_job_log('stitch')
