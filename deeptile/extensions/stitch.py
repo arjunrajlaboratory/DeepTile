@@ -35,6 +35,7 @@ def stitch_tiles(blend=True, sigma=5):
             taper = _generate_taper(dt.tile_size, dt.overlap, sigma)
 
             for n_i, n_j in dt.stitch_indices.keys():
+
                 tile = tiles[n_i, n_j]
                 stitch_slice = np.s_[..., dt.tile_indices[0][n_i, 0]:dt.tile_indices[0][n_i, 1],
                                      dt.tile_indices[1][n_j, 0]:dt.tile_indices[1][n_j, 1]]
@@ -48,6 +49,7 @@ def stitch_tiles(blend=True, sigma=5):
         else:
 
             for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
+
                 tile = tiles[n_i, n_j]
                 tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
                 stitched[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
@@ -87,6 +89,7 @@ def stitch_masks(iou_threshold=0.1):
             total_count = 0
 
             for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
+
                 i_clear = i[(0 < i_image) & (i_image < mask_shape[-2])]
                 j_clear = j[(0 < j_image) & (j_image < mask_shape[-1])]
 
@@ -132,6 +135,43 @@ def stitch_masks(iou_threshold=0.1):
         return stitched_mask
 
     func_stitch = transform(func_stitch, vectorized=False, output_type='stitched_image')
+
+    return func_stitch
+
+
+def stitch_coords():
+
+    """ Generate Algorithm object for a coordinate stitching algorithm.
+
+    Returns
+    -------
+        func_stitch : Algorithm
+            Algorithm object with a coordinate stitching algorithm as the callable.
+    """
+
+    def func_stitch(coords):
+
+        dt = coords.dt
+        first_coord = coords[list(dt.stitch_indices.keys())[0]]
+        n_batches = first_coord.shape[0]
+        stitched_coords = np.empty(n_batches, dtype=object)
+
+        for n in range(n_batches):
+
+            batch_coords = []
+
+            for n_i, n_j in dt.stitch_indices.keys():
+                coord = coords[n_i, n_j][n]
+                coord = coord + np.array([dt.tile_indices[0][n_i, 0], dt.tile_indices[1][n_j, 0]])
+                s = (dt.border_indices[0][n_i] < coord[:, 0]) & (coord[:, 0] < dt.border_indices[0][n_i + 1]) & \
+                    (dt.border_indices[1][n_j] < coord[:, 1]) & (coord[:, 1] < dt.border_indices[1][n_j + 1])
+                batch_coords.append(coord[s])
+
+            stitched_coords[n] = np.concatenate(batch_coords, axis=0)
+
+        return stitched_coords
+
+    func_stitch = transform(func_stitch, vectorized=False, input_type='tiled_coords', output_type='stitched_coords')
 
     return func_stitch
 
