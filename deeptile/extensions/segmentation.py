@@ -2,36 +2,6 @@ import numpy as np
 from deeptile.algorithms import transform
 
 
-def cellori_segmentation(model_parameters, eval_parameters):
-
-    """ Generate Algorithm object for the Cellori segmentation algorithm.
-
-    Parameters
-    ----------
-        model_parameters : dict
-            Dictionary of model parameters.
-        eval_parameters : dict
-            Dictionary of evaluation parameters.
-
-    Returns
-    -------
-        func_segment : Algorithm
-            Algorithm object with Cellori as the callable.
-    """
-
-    from cellori import Cellori
-
-    def func_segment(tile):
-
-        mask = Cellori(tile, **model_parameters).segment(**eval_parameters)[0]
-
-        return mask
-
-    func_segment = transform(func_segment, vectorized=False)
-
-    return func_segment
-
-
 def cellpose_segmentation(model_parameters, eval_parameters):
 
     """ Generate Algorithm object for the Cellpose segmentation algorithm.
