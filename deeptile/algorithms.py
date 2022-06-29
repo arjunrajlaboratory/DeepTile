@@ -1,4 +1,6 @@
 from deeptile.data import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
+from functools import partial as _partial
+from types import FunctionType
 
 ALLOWED_INPUT_TYPES = ALLOWED_TILED_TYPES
 ALLOWED_OUTPUT_TYPES = ALLOWED_TILED_TYPES + ALLOWED_STITCHED_TYPES
@@ -7,28 +9,11 @@ ALLOWED_OUTPUT_TYPES = ALLOWED_TILED_TYPES + ALLOWED_STITCHED_TYPES
 class AlgorithmBase:
 
     """ AlgorithmBase class for use in tile processing and stitching.
-
-    Parameters
-    ----------
-        vectorized : bool
-            Whether the algorithm is vectorized to support batching.
-        default_batch_size : int or None
-            Default number of tiles in each batch.
-        algorithm_type : str
-            Type of algorithm.
-        input_type : str
-            Object type of algorithm input.
-        output_type : str
-            Object type of algorithm output.
     """
 
-    def __init__(self, vectorized, default_batch_size, algorithm_type, input_type, output_type):
+    def __init__(self, **kwargs):
 
-        self.vectorized = vectorized
-        self.default_batch_size = default_batch_size
-        self.algorithm_type = algorithm_type
-        self.input_type = input_type
-        self.output_type = output_type
+        self.__dict__.update((key, value) for key, value in kwargs.items())
 
     def __call__(self, tile):
 
@@ -103,7 +88,39 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
     elif output_type in ALLOWED_STITCHED_TYPES:
         algorithm_type = 'stitch'
 
-    transformed_func = AlgorithmBase.set_callable(func)(vectorized, default_batch_size,
-                                                        algorithm_type, input_type, output_type)
+    kwargs = {
+        'vectorized': vectorized,
+        'default_batch_size': default_batch_size,
+        'algorithm_type': algorithm_type,
+        'input_type': input_type,
+        'output_type': output_type
+    }
+
+    transformed_func = AlgorithmBase.set_callable(func)(**kwargs)
 
     return transformed_func
+
+
+def partial(func, *args, **kwargs):
+
+    """ Generate new function with partial application of given arguments and keywords.
+
+    Parameters
+    ----------
+        func : callable
+            Callable function.
+
+    Returns
+    -------
+        func : callable
+            Callable partial function.
+    """
+
+    if isinstance(func, FunctionType):
+        func = _partial(func, *args, **kwargs)
+    elif isinstance(func, AlgorithmBase):
+        func = func.set_callable(_partial(func.__call__, *args, **kwargs))(**vars(func))
+    else:
+        raise ValueError("Invalid function type.")
+
+    return func
