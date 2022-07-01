@@ -16,6 +16,5 @@ class Profile:
         self.id = len(dt.profiles)
         self.__dict__.update((k, v) for k, v in profile_kwargs.items())
         self.jobs = []
-        self.data_arrays = []
 
         dt.profiles.append(self)

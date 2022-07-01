@@ -42,8 +42,6 @@ class Data(np.ndarray):
         data.otype = otype
 
         if data.dt.link_data:
-            data.id = len(job.profile.data_arrays)
-            data.profile.data_arrays.append(data)
             data.job.output = data
 
         return data
