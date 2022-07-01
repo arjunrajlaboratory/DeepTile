@@ -44,18 +44,52 @@ def calculate_indices(image_shape, tile_size, overlap):
     return tiling, tile_indices, border_indices
 
 
-def calculate_stitch_indices(tiles, tile_indices, border_indices):
+def get_nonempty_indices(tiles):
 
-    stitch_indices = dict()
+    nonempty_indices = []
 
-    for (n_i, n_j), tile in np.ndenumerate(tiles):
-
+    for index, tile in np.ndenumerate(tiles):
         if tile is not None:
-            i_image = border_indices[0][n_i:n_i + 2]
-            j_image = border_indices[1][n_j:n_j + 2]
-            i = i_image - tile_indices[0][n_i, 0]
-            j = j_image - tile_indices[1][n_j, 0]
-            stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
+            nonempty_indices.append(index)
+
+    nonempty_indices = tuple(nonempty_indices)
+
+    return nonempty_indices
+
+
+def calculate_scaled_indices(tiles, rounding=True):
+
+    profile = tiles.profile
+    tile_size = tiles[profile.nonempty_indices[0]].shape[-2:]
+    profile_tile_size = profile.tile_size
+    profile_image_shape = profile.dt.image_shape
+    scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
+    image_shape = (round(profile_image_shape[-2] * scales[0]), round(profile_image_shape[-1] * scales[1]))
+    scales = (image_shape[0] / profile_image_shape[-2], image_shape[1] / profile_image_shape[-1])
+
+    profile_tile_indices = profile.tile_indices
+    profile_border_indices = profile.border_indices
+    tile_indices = (profile_tile_indices[0] * scales[0], profile_tile_indices[1] * scales[1])
+    border_indices = (profile_border_indices[0] * scales[0], profile_border_indices[1] * scales[1])
+
+    if rounding:
+        tile_indices = (np.rint(tile_indices[0]).astype(int), np.rint(tile_indices[1]).astype(int))
+        border_indices = (np.rint(border_indices[0]).astype(int), np.rint(border_indices[1]).astype(int))
+
+    return image_shape, tile_indices, border_indices
+
+
+def calculate_stitch_indices(profile, tile_indices, border_indices):
+
+    stitch_indices = {}
+
+    for n_i, n_j in profile.nonempty_indices:
+
+        i_image = border_indices[0][n_i:n_i + 2]
+        j_image = border_indices[1][n_j:n_j + 2]
+        i = i_image - tile_indices[0][n_i, 0]
+        j = j_image - tile_indices[1][n_j, 0]
+        stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
 
     return stitch_indices
 
@@ -111,20 +145,6 @@ def pad_tiles(tiles, tile_size, tile_indices):
     if tile_padding[1] > 0:
         for i, tile in enumerate(tiles[:, -1]):
             tiles[i, -1] = array_pad(tile, tile_padding[1], -1)
-
-    return tiles, tile_padding
-
-
-def unpad_tiles(tiles, tile_padding):
-
-    tiles = tiles.copy()
-
-    if tile_padding[0] > 0:
-        for i, tile in enumerate(tiles[-1]):
-            tiles[-1, i] = tile[..., :-tile_padding[0], :]
-    if tile_padding[1] > 0:
-        for i, tile in enumerate(tiles[:, -1]):
-            tiles[i, -1] = tile[..., :-tile_padding[1]]
 
     return tiles
 

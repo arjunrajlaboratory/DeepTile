@@ -1,4 +1,6 @@
 import numpy as np
+
+from deeptile import utils
 from deeptile.algorithms import transform
 from skimage import measure
 
@@ -23,32 +25,39 @@ def stitch_tiles(blend=True, sigma=5):
 
     def func_stitch(tiles):
 
-        dt = tiles.dt
-        first_tile = tiles[list(dt.stitch_indices.keys())[0]]
+        profile = tiles.profile
+        nonempty_indices = profile.nonempty_indices
+        first_tile = tiles[nonempty_indices[0]]
+        tile_size = first_tile.shape[-2:]
         dtype = first_tile.dtype
-        stitch_shape = (*first_tile.shape[:-2], *dt.image_shape[-2:])
+
+        image_shape, tile_indices, border_indices = utils.calculate_scaled_indices(tiles)
+        stitch_shape = (*first_tile.shape[:-2], *image_shape[-2:])
         stitched = np.zeros(stitch_shape)
 
         if blend:
 
             avg = np.zeros(stitch_shape[-2:])
-            taper = _generate_taper(dt.tile_size, dt.overlap, sigma)
+            taper = _generate_taper(tile_size, profile.overlap, sigma)
 
-            for n_i, n_j in dt.stitch_indices.keys():
+            for n_i, n_j in nonempty_indices:
 
                 tile = tiles[n_i, n_j]
-                stitch_slice = np.s_[..., dt.tile_indices[0][n_i, 0]:dt.tile_indices[0][n_i, 1],
-                                     dt.tile_indices[1][n_j, 0]:dt.tile_indices[1][n_j, 1]]
-                taper_slice = np.s_[:tile.shape[-2], :tile.shape[-1]]
-                stitched[stitch_slice] = stitched[stitch_slice] + tile * taper[taper_slice]
-                avg[stitch_slice[1:]] = avg[stitch_slice[1:]] + taper[taper_slice]
+                stitch_slice = np.s_[..., tile_indices[0][n_i, 0]:tile_indices[0][n_i, 1],
+                                     tile_indices[1][n_j, 0]:tile_indices[1][n_j, 1]]
+                tile_slice = np.s_[..., :tile_indices[0][n_i, 1] - tile_indices[0][n_i, 0],
+                                        :tile_indices[1][n_j, 1] - tile_indices[1][n_j, 0]]
+                stitched[stitch_slice] = stitched[stitch_slice] + tile[tile_slice] * taper[tile_slice]
+                avg[stitch_slice[1:]] = avg[stitch_slice[1:]] + taper[tile_slice]
 
             stitched = stitched / avg
             stitched = stitched.astype(dtype)
 
         else:
 
-            for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
+            stitch_indices = utils.calculate_stitch_indices(profile, tile_indices, border_indices)
+
+            for (n_i, n_j), (i_image, j_image, i, j) in stitch_indices.items():
 
                 tile = tiles[n_i, n_j]
                 tile_crop = tile[..., i[0]:i[1], j[0]:j[1]]
@@ -78,17 +87,22 @@ def stitch_masks(iou_threshold=0.1):
 
     def func_stitch(masks):
 
-        dt = masks.dt
-        first_mask = masks[list(dt.stitch_indices.keys())[0]]
-        mask_shape = (*first_mask.shape[:-2], *dt.image_shape[-2:])
+        profile = masks.profile
+        nonempty_indices = profile.nonempty_indices
+        first_mask = masks[nonempty_indices[0]]
+
+        image_shape, tile_indices, border_indices = utils.calculate_scaled_indices(masks)
+        mask_shape = (*first_mask.shape[:-2], *image_shape[-2:])
         mask_flat_shape = (np.prod(mask_shape[:-2], dtype=int), *mask_shape[-2:])
         stitched_mask = np.zeros(mask_flat_shape, dtype=int)
+
+        stitch_indices = utils.calculate_stitch_indices(profile, tile_indices, border_indices)
 
         for z in range(mask_flat_shape[0]):
 
             total_count = 0
 
-            for (n_i, n_j), (i_image, j_image, i, j) in dt.stitch_indices.items():
+            for (n_i, n_j), (i_image, j_image, i, j) in stitch_indices.items():
 
                 i_clear = i[(0 < i_image) & (i_image < mask_shape[-2])]
                 j_clear = j[(0 < j_image) & (j_image < mask_shape[-1])]
@@ -105,7 +119,7 @@ def stitch_masks(iou_threshold=0.1):
                 total_count += count
                 stitched_mask[z, i_image[0]:i_image[1], j_image[0]:j_image[1]] = mask_crop
 
-            border_blobs = _find_border_blobs(masks, dt.tile_indices, dt.border_indices, z)
+            border_blobs = _find_border_blobs(masks, tile_indices, border_indices, z)
 
             for (n_i, n_j), blobs in border_blobs.items():
 
@@ -118,10 +132,10 @@ def stitch_masks(iou_threshold=0.1):
 
                     mask_crop = regions[blob - 1].image
                     s = regions[blob - 1].slice
-                    s_image = (slice(s[0].start + dt.tile_indices[0][n_i, 0],
-                                     s[0].stop + dt.tile_indices[0][n_i, 0]),
-                               slice(s[1].start + dt.tile_indices[1][n_j, 0],
-                                     s[1].stop + dt.tile_indices[1][n_j, 0]))
+                    s_image = (slice(s[0].start + tile_indices[0][n_i, 0],
+                                     s[0].stop + tile_indices[0][n_i, 0]),
+                               slice(s[1].start + tile_indices[1][n_j, 0],
+                                     s[1].stop + tile_indices[1][n_j, 0]))
                     image_crop = stitched_mask[z][s_image]
 
                     if _calculate_iou_score(mask_crop, image_crop > 0) < iou_threshold:
@@ -151,8 +165,11 @@ def stitch_coords():
 
     def func_stitch(coords):
 
-        dt = coords.dt
-        first_coord = coords[list(dt.stitch_indices.keys())[0]]
+        profile = coords.profile
+        nonempty_indices = profile.nonempty_indices
+        tile_indices = profile.tile_indices
+        border_indices = profile.border_indices
+        first_coord = coords[nonempty_indices[0]]
         n_batches = first_coord.shape[0]
         stitched_coords = np.empty(n_batches, dtype=object)
 
@@ -160,11 +177,11 @@ def stitch_coords():
 
             batch_coords = []
 
-            for n_i, n_j in dt.stitch_indices.keys():
+            for n_i, n_j in nonempty_indices:
                 coord = coords[n_i, n_j][n]
-                coord = coord + np.array([dt.tile_indices[0][n_i, 0], dt.tile_indices[1][n_j, 0]])
-                s = (dt.border_indices[0][n_i] < coord[:, 0]) & (coord[:, 0] < dt.border_indices[0][n_i + 1]) & \
-                    (dt.border_indices[1][n_j] < coord[:, 1]) & (coord[:, 1] < dt.border_indices[1][n_j + 1])
+                coord = coord + np.array([tile_indices[0][n_i, 0], tile_indices[1][n_j, 0]])
+                s = (border_indices[0][n_i] < coord[:, 0]) & (coord[:, 0] < border_indices[0][n_i + 1]) & \
+                    (border_indices[1][n_j] < coord[:, 1]) & (coord[:, 1] < border_indices[1][n_j + 1])
                 batch_coords.append(coord[s])
 
             stitched_coords[n] = np.concatenate(batch_coords, axis=0)

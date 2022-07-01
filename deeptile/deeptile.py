@@ -3,6 +3,8 @@ from dask.array import Array
 from deeptile import utils
 from deeptile.algorithms import AlgorithmBase
 from deeptile.data import Tiled, Stitched
+from deeptile.jobs import Job
+from deeptile.profiles import Profile
 
 
 class DeepTile:
@@ -19,19 +21,9 @@ class DeepTile:
 
         self.image = image
         self.image_type = None
-
-        self.tiling = None
-        self.tile_size = None
-        self.overlap = None
-        self.slices = None
-        self.configured = False
-
         self.image_shape = None
-        self.tile_indices = None
-        self.border_indices = None
-        self.stitch_indices = None
-        self.tile_padding = None
-        self.job_log = {}
+        self.link_data = True
+        self.profiles = []
 
     def process(self, tiles, func_process, batch_axis=None, batch_size=None, pad_final_batch=False):
 
@@ -58,15 +50,16 @@ class DeepTile:
                 Array of tiles after processing with ``func_process``.
         """
 
-        self._check_configuration()
         self._check_compatibility(tiles, func_process, 'process')
 
-        nonempty_indices = np.array(tuple(self.stitch_indices.keys()))
+        job = Job(tiles, 'process', locals())
+
+        nonempty_indices = tiles.profile.nonempty_indices
         nonempty_tiles = tiles[tuple(zip(*nonempty_indices))]
 
         if batch_axis is not None:
             batch_axis_len = nonempty_tiles[0].shape[batch_axis]
-            nonempty_indices = np.repeat(nonempty_indices, batch_axis_len, 0)
+            nonempty_indices = np.repeat(np.array(nonempty_indices), batch_axis_len, 0)
             nonempty_tiles = [subtile for tile in nonempty_tiles for subtile in list(np.moveaxis(tile, batch_axis, 0))]
 
         processed_tiles = np.empty_like(tiles)
@@ -105,9 +98,7 @@ class DeepTile:
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile,
                                                      batch_axis, func_process.output_type)
 
-        processed_tiles = Tiled(processed_tiles, self, func_process.output_type)
-
-        self._update_job_log('process')
+        processed_tiles = Tiled(job, processed_tiles, func_process.output_type)
 
         return processed_tiles
 
@@ -128,44 +119,16 @@ class DeepTile:
                 Stitched array.
         """
 
-        self._check_configuration()
         self._check_compatibility(tiles, func_stitch, 'stitch')
 
-        if tiles.otype == 'tiled_image':
-            tiles = utils.unpad_tiles(tiles, self.tile_padding)
+        job = Job(tiles, 'stitch', locals())
 
         stitched = func_stitch(tiles)
-        stitched = Stitched(stitched, self, func_stitch.output_type)
-
-        self._update_job_log('stitch')
+        stitched = Stitched(job, stitched, func_stitch.output_type)
 
         return stitched
 
-    def _reset(self):
-
-        """ (For internal use) Reset DeepTile object.
-        """
-
-        self.image_shape = None
-        self.tile_indices = None
-        self.border_indices = None
-        self.stitch_indices = None
-
-    def _check_configuration(self):
-
-        """ (For internal use) Check if DeepTile object is configured.
-
-        Raises
-        ------
-            RuntimeError
-                If ``DeepTile`` object has not been configured.
-        """
-
-        if not self.configured:
-            raise RuntimeError("DeepTile object not configured.")
-
-    @staticmethod
-    def _check_compatibility(tiles, func, job_type):
+    def _check_compatibility(self, tiles, func, job_type):
 
         """ (For internal use) Check if the given tiles and func are compatible.
 
@@ -180,6 +143,8 @@ class DeepTile:
 
         Raises
         ------
+            ValueError
+                If ``tiles`` were not created by this DeepTile object.
             TypeError
                 If ``func`` has not been transformed to an instance of the Algorithm class.
             TypeError
@@ -187,6 +152,9 @@ class DeepTile:
             ValueError
                 If ``tiles`` and ``func`` are not compatible.
         """
+
+        if self is not tiles.dt:
+            raise ValueError("Tiles were not created by this DeepTile object.")
 
         if not isinstance(func, AlgorithmBase):
             raise TypeError(f"func_{job_type} must be transformed to an instance of the Algorithm class.")
@@ -198,30 +166,47 @@ class DeepTile:
             raise ValueError(f"Tile object type {tiles.otype} does not match the expected "
                              f"function input object type {func.input_type}.")
 
-    def _update_job_log(self, job_type):
+    @staticmethod
+    def _create_profile_kwargs(tiling, tile_size, overlap, slices,
+                               nonempty_indices, tile_indices, border_indices):
 
-        """ (For internal use) Update job log.
+        """ (For internal use) Create profile keyword arguments.
 
         Parameters
         ----------
-            job_type : str
-                Type of job.
+            tiling : tuple
+                Number of tiles in each dimension.
+            tile_size : tuple
+                Size of each tile.
+            overlap : tuple
+                Fractions of ``tile_size`` to use for overlap.
+            slices : tuple or int
+                Slices to be extracted.
+            nonempty_indices : tuple
+                Indices of nonempty tiles.
+            tile_indices : tuple
+                Indices of tiles.
+            border_indices : tuple
+                Indices of borders at the middle of tile overlaps.
+
+        Returns
+        -------
+            profile_kwargs : dict
+                Profile keyword arguments.
+
         """
 
-        n = len(self.job_log) + 1
-        self.job_log[n] = {
-            'job_type': job_type,
-            'image_type': self.image_type,
-            'tiling': self.tiling,
-            'tile_size': self.tile_size,
-            'overlap': self.overlap,
-            'slices': self.slices,
-            'image_shape': self.image_shape,
-            'tile_indices': self.tile_indices,
-            'border_indices': self.border_indices,
-            'stitch_indices': self.stitch_indices,
-            'tile_padding': self.tile_padding
+        profile_kwargs = {
+            'tiling': tiling,
+            'tile_size': tile_size,
+            'overlap': overlap,
+            'slices': slices,
+            'nonempty_indices': nonempty_indices,
+            'tile_indices': tile_indices,
+            'border_indices': border_indices,
         }
+
+        return profile_kwargs
 
 
 class DeepTileArray(DeepTile):
@@ -239,9 +224,9 @@ class DeepTileArray(DeepTile):
         super().__init__(image)
         self.image_type = 'array'
 
-    def configure(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None))):
+    def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None))):
 
-        """ Configure DeepTileArray object.
+        """ Split array into tiles.
 
         Parameters
         ----------
@@ -251,19 +236,6 @@ class DeepTileArray(DeepTile):
                 Fractions of ``tile_size`` to use for overlap.
             slices : tuple, optional, default (slice(None))
                 Tuple of slice objects designating slices to be extracted.
-        """
-
-        self._reset()
-
-        self.tile_size = tile_size
-        self.overlap = overlap
-        self.slices = slices
-
-        self.configured = True
-
-    def get_tiles(self):
-
-        """ Split array into tiles.
 
         Returns
         -------
@@ -271,21 +243,20 @@ class DeepTileArray(DeepTile):
                 Array of tiles.
         """
 
-        self._check_configuration()
-
-        image = self.image[self.slices]
+        image = self.image[slices]
         self.image_shape = image.shape
 
-        self.tiling, self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tile_size,
-                                                                                      self.overlap)
-        tiles = utils.array_split_2d(image, self.tile_indices)
+        tiling, tile_indices, border_indices = utils.calculate_indices(self.image_shape, tile_size, overlap)
+        tiles = utils.array_split_2d(image, tile_indices)
         tiles = utils.cast_list_to_array(tiles)
-        tiles, self.tile_padding = utils.pad_tiles(tiles, self.tile_size, self.tile_indices)
-        tiles = Tiled(tiles, self, 'tiled_image')
+        tiles = utils.pad_tiles(tiles, tile_size, tile_indices)
+        nonempty_indices = utils.get_nonempty_indices(tiles)
 
-        self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
-
-        self._update_job_log('get_tiles')
+        profile_kwargs = self._create_profile_kwargs(tiling, tile_size, overlap, slices,
+                                                     nonempty_indices, tile_indices, border_indices)
+        profile = Profile(self, **profile_kwargs)
+        job = Job(self.image, 'get_tiles', locals(), profile)
+        tiles = Tiled(job, tiles, 'tiled_image')
 
         return tiles
 
@@ -305,9 +276,9 @@ class DeepTileLargeImage(DeepTile):
         super().__init__(image)
         self.image_type = 'large_image'
 
-    def configure(self, tile_size, overlap=(0.1, 0.1), slices=0):
+    def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=0):
 
-        """ Configure DeepTileLargeImage object.
+        """ Obtain tiles from large_image tile source.
 
         Parameters
         ----------
@@ -317,19 +288,6 @@ class DeepTileLargeImage(DeepTile):
                 Fractions of ``tile_size`` to use for overlap.
             slices : int, optional, default 0
                 Frame index designating frame to be extracted.
-        """
-
-        self._reset()
-
-        self.tile_size = tile_size
-        self.overlap = overlap
-        self.slices = slices
-
-        self.configured = True
-
-    def get_tiles(self):
-
-        """ Obtain tiles from large_image tile source.
 
         Returns
         -------
@@ -337,19 +295,19 @@ class DeepTileLargeImage(DeepTile):
                 Array of tiles.
         """
 
-        self._check_configuration()
-
         from deeptile.sources import large_image
 
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
-        tiles, self.tiling, self.tile_indices, self.border_indices = \
-            large_image.parse(self.image, self.image_shape, self.tile_size, self.overlap, self.slices)
-        tiles, self.tile_padding = utils.pad_tiles(tiles, self.tile_size, self.tile_indices)
-        tiles = Tiled(tiles, self, 'tiled_image')
+        tiles, tiling, tile_indices, border_indices = large_image.parse(self.image, self.image_shape,
+                                                                        tile_size, overlap, slices)
+        tiles = utils.pad_tiles(tiles, tile_size, tile_indices)
+        nonempty_indices = utils.get_nonempty_indices(tiles)
 
-        self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
-
-        self._update_job_log('get_tiles')
+        profile_kwargs = self._create_profile_kwargs(tiling, tile_size, overlap, slices,
+                                                     nonempty_indices, tile_indices, border_indices)
+        profile = Profile(self, **profile_kwargs)
+        job = Job(self.image, 'get_tiles', locals(), profile)
+        tiles = Tiled(job, tiles, 'tiled_image')
 
         return tiles
 
@@ -369,9 +327,9 @@ class DeepTileND2(DeepTile):
         super().__init__(image)
         self.image_type = 'nd2'
 
-    def configure(self, overlap=(0.1, 0.1), slices=(slice(None))):
+    def get_tiles(self, overlap=(0.1, 0.1), slices=(slice(None))):
 
-        """ Configure DeepTileND2 object.
+        """ Obtain tiles from ND2 file.
 
         Parameters
         ----------
@@ -379,18 +337,6 @@ class DeepTileND2(DeepTile):
                 Fractions to use for overlap. If ``None``, overlap is automatically determined from the ND2 metadata.
             slices : tuple, optional, default (slice(None))
                 Tuple of slice objects designating slices to be extracted.
-        """
-
-        self._reset()
-
-        self.overlap = overlap
-        self.slices = slices
-
-        self.configured = True
-
-    def get_tiles(self):
-
-        """ Obtain tiles from ND2 file.
 
         Returns
         -------
@@ -398,19 +344,16 @@ class DeepTileND2(DeepTile):
                 Array of tiles.
         """
 
-        self._check_configuration()
-
         from deeptile.sources import nd2
 
-        tiles, self.tiling, self.tile_size, self.overlap, self.image_shape = nd2.parse(self.image, self.overlap,
-                                                                                       self.slices)
-        tiles = Tiled(tiles, self, 'tiled_image')
+        tiles, tiling, tile_size, overlap, self.image_shape = nd2.parse(self.image, overlap, slices)
+        _, tile_indices, border_indices = utils.calculate_indices(self.image_shape, tile_size, overlap)
+        nonempty_indices = utils.get_nonempty_indices(tiles)
 
-        _, self.tile_indices, self.border_indices = utils.calculate_indices(self.image_shape, self.tile_size,
-                                                                            self.overlap)
-        self.stitch_indices = utils.calculate_stitch_indices(tiles, self.tile_indices, self.border_indices)
-        self.tile_padding = (0, 0)
-
-        self._update_job_log('get_tiles')
+        profile_kwargs = self._create_profile_kwargs(tiling, tile_size, overlap, slices,
+                                                     nonempty_indices, tile_indices, border_indices)
+        profile = Profile(self, **profile_kwargs)
+        job = Job(self.image, 'get_tiles', locals(), profile)
+        tiles = Tiled(job, tiles, 'tiled_image')
 
         return tiles
