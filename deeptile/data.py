@@ -4,21 +4,76 @@ ALLOWED_TILED_TYPES = ('tiled_image', 'tiled_coords')
 ALLOWED_STITCHED_TYPES = ('stitched_image', 'stitched_coords')
 
 
-class Tiled(np.ndarray):
+class Data(np.ndarray):
 
-    """ numpy.ndarray subclass for storing tiled data.
+    """ numpy.ndarray subclass for storing DeepTile data.
     """
 
-    def __new__(cls, job, tiles, otype):
+    def __new__(cls, data, job, otype, allowed_otypes):
+
+        """ Create new Data object.
+
+        Parameters
+        ----------
+            data : numpy.ndarray or Data
+                Data array.
+            job : Job
+                Job that generated this data object.
+            otype : str
+                Data object type.
+            allowed_otypes : tuple
+                List of allowed data object type.
+
+        Returns
+        -------
+            data : Tiled
+                Data array.
+        """
+
+        data = np.asarray(data).view(cls)
+
+        if otype not in allowed_otypes:
+            raise ValueError("Invalid tiled object type.")
+
+        data.dt = job.dt
+        data.profile = job.profile
+        data.job = job
+        data.id = None
+        data.otype = otype
+
+        if data.dt.link_data:
+            data.id = len(job.profile.data_arrays)
+            data.profile.data_arrays.append(data)
+            data.job.output = data
+
+        return data
+
+    def __array_finalize__(self, data):
+
+        if data is None:
+            return
+        self.dt = getattr(data, 'dt', None)
+        self.profile = getattr(data, 'profile', None)
+        self.job = getattr(data, 'job', None)
+        self.id = getattr(data, 'id', None)
+        self.otype = getattr(data, 'otype', None)
+
+
+class Tiled(Data):
+
+    """ numpy.ndarray subclass for storing DeepTile tiled data.
+    """
+
+    def __new__(cls, tiles, job, otype):
 
         """ Create new Tiled object.
 
         Parameters
         ----------
-            job : Job
-                Job that generated this tiled object.
             tiles : numpy.ndarray or Tiled
                 Array of tiles.
+            job : Job
+                Job that generated this tiled object.
             otype : str
                 Tiled object type.
 
@@ -28,50 +83,26 @@ class Tiled(np.ndarray):
                 Array of tiles.
         """
 
-        tiles = np.asarray(tiles).view(cls)
-
-        if otype not in ALLOWED_TILED_TYPES:
-            raise ValueError("Invalid tiled object type.")
-
-        tiles.dt = job.dt
-        tiles.profile = job.profile
-        tiles.job = job
-        tiles.id = None
-        tiles.otype = otype
-
-        if tiles.dt.link_data:
-            tiles.id = len(job.profile.data)
-            tiles.profile.data.append(tiles)
-            tiles.job.output = tiles
+        tiles = super().__new__(cls, tiles, job, otype, ALLOWED_TILED_TYPES)
 
         return tiles
 
-    def __array_finalize__(self, tiles):
 
-        if tiles is None:
-            return
-        self.dt = getattr(tiles, 'dt', None)
-        self.profile = getattr(tiles, 'profile', None)
-        self.job = getattr(tiles, 'job', None)
-        self.id = getattr(tiles, 'id', None)
-        self.otype = getattr(tiles, 'otype', None)
+class Stitched(Data):
 
-
-class Stitched(np.ndarray):
-
-    """ numpy.ndarray subclass for storing stitched data.
+    """ numpy.ndarray subclass for storing DeepTile stitched data.
     """
 
-    def __new__(cls, job, stitched, otype):
+    def __new__(cls, stitched, job, otype):
 
         """ Create new Stitched object.
 
         Parameters
         ----------
-            job : Job
-                Job that generated this stitched object.
             stitched : numpy.ndarray or Stitched
                 Stitched array.
+            job : Job
+                Job that generated this stitched object.
             otype : str
                 Stitched object type.
 
@@ -81,30 +112,6 @@ class Stitched(np.ndarray):
                 Stitched array.
         """
 
-        stitched = np.asarray(stitched).view(cls)
-
-        if otype not in ALLOWED_STITCHED_TYPES:
-            raise ValueError("Invalid stitched object type.")
-
-        stitched.dt = job.dt
-        stitched.profile = job.profile
-        stitched.job = job
-        stitched.id = None
-        stitched.otype = otype
-
-        if stitched.dt.link_data:
-            stitched.id = len(job.profile.data)
-            stitched.profile.data.append(stitched)
-            stitched.job.output = stitched
+        stitched = super().__new__(cls, stitched, job, otype, ALLOWED_STITCHED_TYPES)
 
         return stitched
-
-    def __array_finalize__(self, stitched):
-
-        if stitched is None:
-            return
-        self.dt = getattr(stitched, 'dt', None)
-        self.job = getattr(stitched, 'job', None)
-        self.profile = getattr(stitched, 'profile', None)
-        self.id = getattr(stitched, 'id', None)
-        self.otype = getattr(stitched, 'otype', None)

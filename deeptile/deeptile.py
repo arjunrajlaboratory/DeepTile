@@ -98,7 +98,7 @@ class DeepTile:
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile,
                                                      batch_axis, func_process.output_type)
 
-        processed_tiles = Tiled(job, processed_tiles, func_process.output_type)
+        processed_tiles = Tiled(processed_tiles, job, func_process.output_type)
 
         return processed_tiles
 
@@ -124,7 +124,7 @@ class DeepTile:
         job = Job(tiles, 'stitch', locals())
 
         stitched = func_stitch(tiles)
-        stitched = Stitched(job, stitched, func_stitch.output_type)
+        stitched = Stitched(stitched, job, func_stitch.output_type)
 
         return stitched
 
@@ -256,7 +256,7 @@ class DeepTileArray(DeepTile):
                                                      nonempty_indices, tile_indices, border_indices)
         profile = Profile(self, **profile_kwargs)
         job = Job(self.image, 'get_tiles', locals(), profile)
-        tiles = Tiled(job, tiles, 'tiled_image')
+        tiles = Tiled(tiles, job, 'tiled_image')
 
         return tiles
 
@@ -307,7 +307,7 @@ class DeepTileLargeImage(DeepTile):
                                                      nonempty_indices, tile_indices, border_indices)
         profile = Profile(self, **profile_kwargs)
         job = Job(self.image, 'get_tiles', locals(), profile)
-        tiles = Tiled(job, tiles, 'tiled_image')
+        tiles = Tiled(tiles, job, 'tiled_image')
 
         return tiles
 
@@ -354,6 +354,6 @@ class DeepTileND2(DeepTile):
                                                      nonempty_indices, tile_indices, border_indices)
         profile = Profile(self, **profile_kwargs)
         job = Job(self.image, 'get_tiles', locals(), profile)
-        tiles = Tiled(job, tiles, 'tiled_image')
+        tiles = Tiled(tiles, job, 'tiled_image')
 
         return tiles
