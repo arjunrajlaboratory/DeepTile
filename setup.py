@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "1.2"
+VERSION = "1.3"
 DESCRIPTION = "DeepTile"
 LONG_DESCRIPTION = "Large image tiling and stitching algorithm for deep learning libraries."
 

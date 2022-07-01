@@ -6,13 +6,15 @@ class Profile:
     ----------
         dt : DeepTile
             DeepTile object.
+        **profile_kwargs : dict
+            Profile keyword arguments.
     """
 
-    def __init__(self, dt, **kwargs):
+    def __init__(self, dt, **profile_kwargs):
 
         self.dt = dt
         self.id = len(dt.profiles)
-        self.__dict__.update((key, value) for key, value in kwargs.items())
+        self.__dict__.update((k, v) for k, v in profile_kwargs.items())
         self.jobs = []
         self.data_arrays = []
 

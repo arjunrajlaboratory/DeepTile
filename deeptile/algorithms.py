@@ -9,11 +9,16 @@ ALLOWED_OUTPUT_TYPES = ALLOWED_TILED_TYPES + ALLOWED_STITCHED_TYPES
 class AlgorithmBase:
 
     """ AlgorithmBase class for use in tile processing and stitching.
+
+    Parameters
+    ----------
+        **algorithm_kwargs : dict
+            Algorithm keyword arguments.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **algorithm_kwargs):
 
-        self.__dict__.update((key, value) for key, value in kwargs.items())
+        self.__dict__.update((k, v) for k, v in algorithm_kwargs.items())
 
     def __call__(self, tile):
 
@@ -88,7 +93,7 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
     elif output_type in ALLOWED_STITCHED_TYPES:
         algorithm_type = 'stitch'
 
-    kwargs = {
+    algorithm_kwargs = {
         'vectorized': vectorized,
         'default_batch_size': default_batch_size,
         'algorithm_type': algorithm_type,
@@ -96,7 +101,7 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
         'output_type': output_type
     }
 
-    transformed_func = AlgorithmBase.set_callable(func)(**kwargs)
+    transformed_func = AlgorithmBase.set_callable(func)(**algorithm_kwargs)
 
     return transformed_func
 

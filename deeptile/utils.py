@@ -57,7 +57,7 @@ def get_nonempty_indices(tiles):
     return nonempty_indices
 
 
-def calculate_scaled_indices(tiles, rounding=True):
+def calculate_scaled_indices(tiles):
 
     profile = tiles.profile
     tile_size = tiles[profile.nonempty_indices[0]].shape[-2:]
@@ -69,12 +69,10 @@ def calculate_scaled_indices(tiles, rounding=True):
 
     profile_tile_indices = profile.tile_indices
     profile_border_indices = profile.border_indices
-    tile_indices = (profile_tile_indices[0] * scales[0], profile_tile_indices[1] * scales[1])
-    border_indices = (profile_border_indices[0] * scales[0], profile_border_indices[1] * scales[1])
-
-    if rounding:
-        tile_indices = (np.rint(tile_indices[0]).astype(int), np.rint(tile_indices[1]).astype(int))
-        border_indices = (np.rint(border_indices[0]).astype(int), np.rint(border_indices[1]).astype(int))
+    tile_indices = (np.rint(profile_tile_indices[0] * scales[0]).astype(int),
+                    np.rint(profile_tile_indices[1] * scales[1]).astype(int))
+    border_indices = (np.rint(profile_border_indices[0] * scales[0]).astype(int),
+                      np.rint(profile_border_indices[1] * scales[1]).astype(int))
 
     return image_shape, tile_indices, border_indices
 

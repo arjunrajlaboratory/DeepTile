@@ -12,7 +12,7 @@ class Job:
         job_type : str
             Type of job.
         job_kwargs : dict
-            Keyword arguments for the job.
+            Job keyword arguments.
         profile : Profile
             New profile used when ``job_input`` is a tile source.
     """
