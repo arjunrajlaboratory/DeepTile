@@ -156,7 +156,7 @@ class DeepTile:
         if self is not tiles.dt:
             raise ValueError("Tiles were not created by this DeepTile object.")
 
-        if not isinstance(func, AlgorithmBase):
+        if not issubclass(type(func), AlgorithmBase):
             raise TypeError(f"func_{job_type} must be transformed to an instance of the Algorithm class.")
 
         if func.algorithm_type != job_type:
