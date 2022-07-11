@@ -98,7 +98,7 @@ class Stitched(Data):
         Parameters
         ----------
             stitched : numpy.ndarray or Stitched
-                Stitched array.
+                Stitched object.
             job : Job
                 Job that generated this stitched object.
             otype : str
@@ -107,7 +107,7 @@ class Stitched(Data):
         Returns
         -------
             stitched : Stitched
-                Stitched array.
+                Stitched object.
         """
 
         stitched = super().__new__(cls, stitched, job, otype, ALLOWED_STITCHED_TYPES)
