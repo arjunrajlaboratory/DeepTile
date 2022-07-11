@@ -87,7 +87,7 @@ class Tiled(Data):
         return tiles
 
     @property
-    def at(self):
+    def s(self):
 
         """ Get the Slice object for tile-wise slicing.
         """
