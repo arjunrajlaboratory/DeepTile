@@ -3,7 +3,7 @@ from deeptile import deeptile
 from pathlib import Path
 
 
-def load(image):
+def load(image, link_data=True):
 
     """ Load image into a DeepTile object.
 
@@ -11,6 +11,9 @@ def load(image):
     ----------
         image
             An object or path of an image.
+        link_data : bool, optional, default True
+            Whether to link input and output data to the profile and job objects. Set to ``False`` to reduce memory
+            usage.
 
     Returns
     -------
@@ -29,6 +32,8 @@ def load(image):
             dt = from_nd2(image)
     else:
         raise ValueError("Invalid image.")
+
+    dt.link_data = link_data
 
     return dt
 
