@@ -82,8 +82,17 @@ class Tiled(Data):
         """
 
         tiles = super().__new__(cls, tiles, job, otype, ALLOWED_TILED_TYPES)
+        tiles.slices = []
 
         return tiles
+
+    @property
+    def at(self):
+
+        """ Get the Slice object for tile-wise slicing.
+        """
+
+        return Slice(self)
 
 
 class Stitched(Data):
@@ -113,3 +122,43 @@ class Stitched(Data):
         stitched = super().__new__(cls, stitched, job, otype, ALLOWED_STITCHED_TYPES)
 
         return stitched
+
+
+class Slice:
+
+    """ Slice class for tile-wise slicing.
+
+    Parameters
+    ----------
+        tiles : numpy.ndarray or Tiled
+            Array of tiles.
+    """
+
+    def __init__(self, tiles):
+
+        self.tiles = tiles
+
+    def __getitem__(self, slices):
+
+        """ Apply slices to each tile.
+
+        Parameters
+        ----------
+            slices : tuple, optional, default (slice(None))
+                Tuple of slice objects designating slices to be extracted.
+
+        Returns
+        -------
+            sliced_tiles : Tiled
+                Stitched object.
+        """
+
+        sliced_tiles = self.tiles.copy()
+        sliced_tiles.slices = self.tiles.slices + [slices]
+        nonempty_indices = self.tiles.profile.nonempty_indices
+        nonempty_tiles = sliced_tiles[tuple(zip(*nonempty_indices))]
+
+        for index, tile in zip(nonempty_indices, nonempty_tiles):
+            sliced_tiles[index] = tile[slices]
+
+        return sliced_tiles
