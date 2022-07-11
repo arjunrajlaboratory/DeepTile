@@ -19,7 +19,7 @@ class Job:
 
     def __init__(self, job_input, job_type, job_kwargs, profile=None):
 
-        job_kwargs = job_kwargs.pop('self')
+        job_kwargs.pop('self')
 
         if profile is None:
             self.profile = job_input.profile
