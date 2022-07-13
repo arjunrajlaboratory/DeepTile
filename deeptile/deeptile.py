@@ -63,11 +63,7 @@ class DeepTile:
             nonempty_tiles = [subtile for tile in nonempty_tiles for subtile in list(np.moveaxis(tile, batch_axis, 0))]
 
         output_type = func_process.output_type
-        if isinstance(output_type, str):
-            output_type = (output_type, )
-            processed_tiles = [np.empty_like(tiles)]
-        else:
-            processed_tiles = [np.empty_like(tiles) for _ in range(len(output_type))]
+        processed_tiles = [np.empty_like(tiles) for _ in range(len(output_type))]
 
         if func_process.vectorized:
 

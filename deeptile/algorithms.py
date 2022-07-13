@@ -99,6 +99,7 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
             algorithm_type = 'stitch'
         else:
             raise ValueError("Invalid output object type.")
+        output_type = (output_type, )
     elif isinstance(output_type, tuple):
         allowed_output_types = ()
         if output_type[0] in ALLOWED_TILED_TYPES:
