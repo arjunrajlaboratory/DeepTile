@@ -82,6 +82,7 @@ class Tiled(Data):
         """
 
         tiles = super().__new__(cls, tiles, job, otype, ALLOWED_TILED_TYPES)
+        tiles.parent = tiles
         tiles.slices = []
 
         return tiles
@@ -154,6 +155,7 @@ class Slice:
         """
 
         sliced_tiles = self.tiles.copy()
+        sliced_tiles.parent = self.tiles.parent
         sliced_tiles.slices = self.tiles.slices + [slices]
         nonempty_indices = self.tiles.profile.nonempty_indices
         nonempty_tiles = sliced_tiles[tuple(zip(*nonempty_indices))]
