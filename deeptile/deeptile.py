@@ -46,7 +46,7 @@ class DeepTile:
 
         Returns
         -------
-            processed_tiles : Tiled
+            processed_tiles : Tiled or tuple of Tiled
                 Array of tiles after processing with ``func_process``.
         """
 
@@ -62,7 +62,12 @@ class DeepTile:
             nonempty_indices = np.repeat(np.array(nonempty_indices), batch_axis_len, 0)
             nonempty_tiles = [subtile for tile in nonempty_tiles for subtile in list(np.moveaxis(tile, batch_axis, 0))]
 
-        processed_tiles = np.empty_like(tiles)
+        output_type = func_process.output_type
+        if isinstance(output_type, str):
+            output_type = (output_type, )
+            processed_tiles_list = [np.empty_like(tiles)]
+        else:
+            processed_tiles_list = [np.empty_like(tiles) for _ in range(len(output_type))]
 
         if func_process.vectorized:
 
@@ -80,12 +85,14 @@ class DeepTile:
                 if isinstance(batch_tiles, Array):
                     batch_tiles = batch_tiles.compute()
 
-                processed_batch_tiles = func_process(batch_tiles)
+                processed_batch_tiles_list = func_process(batch_tiles)
 
-                for index, processed_tile in zip(batch_indices, processed_batch_tiles):
+                for i_batch, index in enumerate(batch_indices):
 
-                    processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile,
-                                                         batch_axis, func_process.output_type)
+                    processed_tile_list = tuple(processed_batch_tiles[i_batch]
+                                                for processed_batch_tiles in processed_batch_tiles_list)
+                    processed_tiles_list = utils.update_tiles(processed_tiles_list, tuple(index), processed_tile_list,
+                                                              batch_axis, func_process.output_type)
 
         else:
 
@@ -94,11 +101,17 @@ class DeepTile:
                 if isinstance(tile, Array):
                     tile = tile.compute()
 
-                processed_tile = func_process(tile)
-                processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile,
-                                                     batch_axis, func_process.output_type)
+                processed_tile_list = func_process(tile)
+                processed_tiles_list = utils.update_tiles(processed_tiles_list, tuple(index), processed_tile_list,
+                                                          batch_axis, func_process.output_type)
 
-        processed_tiles = Tiled(processed_tiles, job, func_process.output_type)
+        processed_tiles_list = [Tiled(processed_tiles, job, otype)
+                                for processed_tiles, otype in zip(processed_tiles_list, output_type)]
+
+        if len(processed_tiles_list) == 1:
+            processed_tiles = processed_tiles_list[0]
+        else:
+            processed_tiles = tuple(processed_tiles_list)
 
         return processed_tiles
 

@@ -2,9 +2,6 @@ from deeptile.data import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
 from functools import partial as _partial
 from types import FunctionType
 
-ALLOWED_INPUT_TYPES = ALLOWED_TILED_TYPES
-ALLOWED_OUTPUT_TYPES = ALLOWED_TILED_TYPES + ALLOWED_STITCHED_TYPES
-
 
 class AlgorithmBase:
 
@@ -69,13 +66,20 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
             Default number of tiles in each batch. If ``vectorized`` is ``False``, this value is set to ``None``.
         input_type : str
             Object type of algorithm input.
-        output_type : str
+        output_type : str or tuple of str
             Object type of algorithm output.
 
     Returns
     -------
         transformed_func : Algorithm
             Function transformed into an Algorithm object.
+
+    Raises
+    ------
+        ValueError
+            If ``input_type`` is invalid.
+        ValueError
+            If ``output_type`` is invalid.
     """
 
     if not vectorized:
@@ -88,10 +92,26 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
         raise ValueError("Invalid output object type.")
 
     algorithm_type = None
-    if output_type in ALLOWED_TILED_TYPES:
-        algorithm_type = 'process'
-    elif output_type in ALLOWED_STITCHED_TYPES:
-        algorithm_type = 'stitch'
+    if isinstance(output_type, str):
+        if output_type in ALLOWED_TILED_TYPES:
+            algorithm_type = 'process'
+        elif output_type in ALLOWED_STITCHED_TYPES:
+            algorithm_type = 'stitch'
+        else:
+            raise ValueError("Invalid output object type.")
+    elif isinstance(output_type, tuple):
+        allowed_output_types = ()
+        if output_type[0] in ALLOWED_TILED_TYPES:
+            algorithm_type = 'process'
+            allowed_output_types = ALLOWED_TILED_TYPES
+        elif output_type[0] in ALLOWED_STITCHED_TYPES:
+            algorithm_type = 'stitch'
+            allowed_output_types = ALLOWED_STITCHED_TYPES
+        for otype in output_type:
+            if otype not in allowed_output_types:
+                raise ValueError("Invalid output object type.")
+    else:
+        raise ValueError("Invalid output object type.")
 
     algorithm_kwargs = {
         'vectorized': vectorized,
