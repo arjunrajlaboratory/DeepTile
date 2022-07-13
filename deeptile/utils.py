@@ -147,44 +147,40 @@ def pad_tiles(tiles, tile_size, tile_indices):
     return tiles
 
 
-def update_tiles(tiles_list, index, tile_list, batch_axis, output_type):
+def update_tiles(tiles, index, tile, batch_axis, output_type):
 
-    if not isinstance(tile_list, tuple):
-        tile_list = (tile_list, )
-    if not isinstance(output_type, tuple):
-        output_type = (output_type, )
-    num_expected = len(tiles_list)
-    num_got = len(tile_list)
+    num_expected = len(tiles)
+    num_got = len(tile)
     if num_expected != num_got:
         raise ValueError(f'Expected {num_expected} outputs, got {num_got}.')
 
     for i_output in range(num_expected):
 
-        tiles = tiles_list[i_output]
-        tile = tile_list[i_output]
+        ts = tiles[i_output]
+        t = tile[i_output]
         otype = output_type[i_output]
 
         if otype == 'tiled_image':
 
             if batch_axis is None:
-                tiles[index] = tile
+                ts[index] = t
             else:
-                current_tile = tiles[index]
+                current_tile = ts[index]
                 if isinstance(current_tile, np.ndarray):
-                    tiles[index] = np.concatenate((current_tile, np.expand_dims(tile, batch_axis)), batch_axis)
+                    ts[index] = np.concatenate((current_tile, np.expand_dims(t, batch_axis)), batch_axis)
                 else:
-                    tiles[index] = np.expand_dims(tile, batch_axis)
+                    ts[index] = np.expand_dims(t, batch_axis)
 
-        if otype == 'tiled_coords':
+        elif otype == 'tiled_coords':
 
-            current_tile = tiles[index]
+            current_tile = ts[index]
             if isinstance(current_tile, np.ndarray):
                 new_tile = np.empty((1, ), dtype=object)
-                new_tile[0] = tile
-                tiles[index] = np.concatenate((current_tile, new_tile), 0)
+                new_tile[0] = t
+                ts[index] = np.concatenate((current_tile, new_tile), 0)
             else:
                 new_tile = np.empty((1, ), dtype=object)
-                new_tile[0] = tile
-                tiles[index] = new_tile
+                new_tile[0] = t
+                ts[index] = new_tile
 
-    return tiles_list
+    return tiles
