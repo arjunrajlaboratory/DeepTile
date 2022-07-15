@@ -25,6 +25,7 @@ def stitch_tiles(blend=True, sigma=5):
 
     def func_stitch(tiles):
 
+        tiles = tiles[0]
         profile = tiles.profile
         nonempty_indices = profile.nonempty_indices
         first_tile = tiles[nonempty_indices[0]]
@@ -87,6 +88,7 @@ def stitch_masks(iou_threshold=0.1):
 
     def func_stitch(masks):
 
+        masks = masks[0]
         profile = masks.profile
         nonempty_indices = profile.nonempty_indices
         first_mask = masks[nonempty_indices[0]]
@@ -165,6 +167,7 @@ def stitch_coords():
 
     def func_stitch(coords):
 
+        coords = coords[0]
         profile = coords.profile
         nonempty_indices = profile.nonempty_indices
         tile_indices = profile.tile_indices
