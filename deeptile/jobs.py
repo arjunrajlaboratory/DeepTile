@@ -22,7 +22,7 @@ class Job:
         job_kwargs.pop('self')
 
         if profile is None:
-            self.profile = job_input.profile
+            self.profile = job_input[0].profile
         else:
             self.profile = profile
         self.profile.jobs.append(self)

@@ -1,4 +1,13 @@
 import numpy as np
+from dask.array import Array
+
+
+def to_tuple(obj):
+
+    if not isinstance(obj, tuple):
+        obj = (obj, )
+
+    return obj
 
 
 def calculate_tiling(axis_size, tile_size, overlap_size):
@@ -92,9 +101,14 @@ def calculate_stitch_indices(profile, tile_indices, border_indices):
     return stitch_indices
 
 
+def axis_take(ary, axis, index):
+
+    return ary[(slice(None), ) * (axis % ary.ndim) + (index, )]
+
+
 def axis_slice(ary, axis, start, end, step=1):
 
-    return ary[(slice(None),) * (axis % ary.ndim) + (slice(start, end, step),)]
+    return ary[(slice(None), ) * (axis % ary.ndim) + (slice(start, end, step), )]
 
 
 def array_split(ary, indices, axis):
@@ -147,12 +161,21 @@ def pad_tiles(tiles, tile_size, tile_indices):
     return tiles
 
 
+def compute_dask(tiles):
+
+    for i, ts in enumerate(tiles):
+        if isinstance(ts, Array):
+            tiles[i] = ts.compute()
+
+    return tiles
+
+
 def update_tiles(tiles, index, tile, batch_axis, output_type):
 
     num_expected = len(tiles)
     num_got = len(tile)
     if num_expected != num_got:
-        raise ValueError(f'Expected {num_expected} outputs, got {num_got}.')
+        raise ValueError(f'Expected output count {num_expected}, got {num_got}.')
 
     for i_output in range(num_expected):
 

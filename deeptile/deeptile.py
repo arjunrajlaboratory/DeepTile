@@ -1,5 +1,4 @@
 import numpy as np
-from dask.array import Array
 from deeptile import utils
 from deeptile.algorithms import AlgorithmBase
 from deeptile.data import Tiled, Stitched
@@ -31,7 +30,7 @@ class DeepTile:
 
         Parameters
         ----------
-            tiles : Tiled
+            tiles : Tiled or tuple of Tiled
                 Array of tiles.
             func_process : Algorithm
                 Processing function transformed into an Algorithm object.
@@ -50,40 +49,40 @@ class DeepTile:
                 Array of tiles after processing with ``func_process``.
         """
 
+        tiles = utils.to_tuple(tiles)
         self._check_compatibility(tiles, func_process, 'process')
 
         job = Job(tiles, 'process', locals())
 
-        nonempty_indices = tiles.profile.nonempty_indices
-        nonempty_tiles = tiles[tuple(zip(*nonempty_indices))]
+        nonempty_indices = tiles[0].profile.nonempty_indices
+        nonempty_tiles = [[ts[nonempty_index] for nonempty_index in nonempty_indices] for ts in tiles]
 
-        if batch_axis is not None:
-            batch_axis_len = nonempty_tiles[0].shape[batch_axis]
-            nonempty_indices = np.repeat(np.array(nonempty_indices), batch_axis_len, 0)
-            nonempty_tiles = [subtile for tile in nonempty_tiles for subtile in list(np.moveaxis(tile, batch_axis, 0))]
-
-        output_type = func_process.output_type
-        processed_tiles = [np.empty_like(tiles) for _ in range(len(output_type))]
+        output_type = utils.to_tuple(func_process.output_type)
+        processed_tiles = [np.empty_like(tiles[0]) for _ in range(len(output_type))]
 
         if func_process.vectorized:
+
+            if batch_axis is not None:
+                batch_axis_len = nonempty_tiles[0][0].shape[batch_axis]
+                nonempty_indices = np.repeat(np.array(nonempty_indices), batch_axis_len, 0)
+                nonempty_tiles = [[subt for t in ts for subt in list(np.moveaxis(t, batch_axis, 0))]
+                                  for ts in nonempty_tiles]
 
             if batch_size is None:
                 batch_size = func_process.default_batch_size
 
-            n_batches = np.ceil(len(nonempty_tiles) / batch_size).astype(int)
+            n_batches = np.ceil(len(nonempty_tiles[0]) / batch_size).astype(int)
 
             for n in range(n_batches):
 
                 batch_indices = nonempty_indices[n * batch_size:(n + 1) * batch_size]
-                batch_tiles = np.stack(nonempty_tiles[n * batch_size:(n + 1) * batch_size])
-                if pad_final_batch & (batch_tiles.shape[0] < batch_size):
-                    batch_tiles = utils.array_pad(batch_tiles, batch_size - batch_tiles.shape[0], 0)
-                if isinstance(batch_tiles, Array):
-                    batch_tiles = batch_tiles.compute()
+                batch_tiles = [np.stack(ts[n * batch_size:(n + 1) * batch_size]) for ts in nonempty_tiles]
+                if pad_final_batch & (batch_tiles[0].shape[0] < batch_size):
+                    batch_tiles = [utils.array_pad(ts, batch_size - ts.shape[0], 0) for ts in batch_tiles]
+                batch_tiles = utils.compute_dask(batch_tiles)
 
-                processed_batch_tiles = func_process(batch_tiles)
-                if not isinstance(processed_batch_tiles, tuple):
-                    processed_batch_tiles = (processed_batch_tiles, )
+                processed_batch_tiles = func_process(*batch_tiles)
+                processed_batch_tiles = utils.to_tuple(processed_batch_tiles)
 
                 for i_batch, index in enumerate(batch_indices):
 
@@ -93,15 +92,13 @@ class DeepTile:
 
         else:
 
-            for index, tile in zip(nonempty_indices, nonempty_tiles):
+            for i_nonempty, index in enumerate(nonempty_indices):
 
-                if isinstance(tile, Array):
-                    tile = tile.compute()
+                tile = [ts[i_nonempty] for ts in nonempty_tiles]
+                tile = utils.compute_dask(tile)
 
-                processed_tile = func_process(tile)
-                if not isinstance(processed_tile, tuple):
-                    processed_tile = (processed_tile, )
-
+                processed_tile = func_process(*tile)
+                processed_tile = utils.to_tuple(processed_tile)
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                      output_type)
 
@@ -120,7 +117,7 @@ class DeepTile:
 
         Parameters
         ----------
-            tiles : Tiled
+            tiles : Tiled or tuple of Tiled
                 Array of tiles.
             func_stitch : Algorithm
                 Stitching function transformed into an Algorithm object.
@@ -131,6 +128,7 @@ class DeepTile:
                 Stitched array.
         """
 
+        tiles = utils.to_tuple(tiles)
         self._check_compatibility(tiles, func_stitch, 'stitch')
 
         job = Job(tiles, 'stitch', locals())
@@ -146,7 +144,7 @@ class DeepTile:
 
         Parameters
         ----------
-            tiles : Tiled
+            tiles : tuple of Tiled
                 Array of tiles.
             func : Algorithm
                 Function transformed into an Algorithm object.
@@ -156,27 +154,33 @@ class DeepTile:
         Raises
         ------
             ValueError
+                If ``tiles`` and ``func`` are not compatible.
+            ValueError
                 If ``tiles`` were not created by this DeepTile object.
             TypeError
                 If ``func`` has not been transformed to an instance of the Algorithm class.
             TypeError
                 If ``func`` has the incorrect algorithm type.
-            ValueError
-                If ``tiles`` and ``func`` are not compatible.
         """
 
-        if self is not tiles.dt:
-            raise ValueError("Tiles were not created by this DeepTile object.")
+        input_type = utils.to_tuple(func.input_type)
+        num_expected = len(input_type)
+        num_got = len(tiles)
+
+        if num_expected != num_got:
+            raise ValueError(f'Expected input count {num_expected}, got {num_got}.')
+
+        for i, ts in enumerate(tiles):
+            if self is not ts.dt:
+                raise ValueError("Tiles were not created by this DeepTile object.")
+            if ts.otype != input_type[i]:
+                raise ValueError(f"Tile object type does not match the expected function input object type.")
 
         if not issubclass(type(func), AlgorithmBase):
             raise TypeError(f"func_{job_type} must be transformed to an instance of the Algorithm class.")
 
         if func.algorithm_type != job_type:
             raise TypeError(f"func_{job_type} has the incorrect algorithm type of {func.algorithm_type}.")
-
-        if tiles.otype != func.input_type:
-            raise ValueError(f"Tile object type {tiles.otype} does not match the expected "
-                             f"function input object type {func.input_type}.")
 
     @staticmethod
     def _create_profile_kwargs(tiling, tile_size, overlap, slices,
