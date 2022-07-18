@@ -60,13 +60,13 @@ class DeepTile:
         output_type = utils.to_tuple(func_process.output_type)
         processed_tiles = [np.empty_like(tiles[0]) for _ in range(len(output_type))]
 
-        if func_process.vectorized:
+        if batch_axis is not None:
+            batch_axis_len = nonempty_tiles[0][0].shape[batch_axis]
+            nonempty_indices = np.repeat(np.array(nonempty_indices), batch_axis_len, 0)
+            nonempty_tiles = [[subt for t in ts for subt in list(np.moveaxis(t, batch_axis, 0))]
+                              for ts in nonempty_tiles]
 
-            if batch_axis is not None:
-                batch_axis_len = nonempty_tiles[0][0].shape[batch_axis]
-                nonempty_indices = np.repeat(np.array(nonempty_indices), batch_axis_len, 0)
-                nonempty_tiles = [[subt for t in ts for subt in list(np.moveaxis(t, batch_axis, 0))]
-                                  for ts in nonempty_tiles]
+        if func_process.vectorized:
 
             if batch_size is None:
                 batch_size = func_process.default_batch_size
