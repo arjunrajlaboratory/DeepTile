@@ -133,7 +133,7 @@ class DeepTile:
 
         job = Job(tiles, 'stitch', locals())
 
-        stitched = func_stitch(tiles)
+        stitched = func_stitch(*tiles)
         stitched = Stitched(stitched, job, func_stitch.output_type)
 
         return stitched
