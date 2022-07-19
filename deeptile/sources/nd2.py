@@ -1,22 +1,34 @@
 import nd2
 import numpy as np
+from collections import OrderedDict
+
+AXES_ORDER = ('P', 'T', 'Z', 'C', 'S', 'Y', 'X')
 
 
 def read(image):
 
-    return nd2.ND2File(image)
+    image = nd2.ND2File(image)
+    raw_image_sizes = image.sizes
+    axes_order = tuple(axis for axis in AXES_ORDER if axis in raw_image_sizes.keys())
+    image_sizes = OrderedDict((axis, raw_image_sizes[axis]) for axis in axes_order)
+
+    return image, image_sizes, axes_order
 
 
-def parse(image, overlap, slices):
+def parse(image, image_sizes, axes_order, overlap, slices):
 
-    if 'P' not in image.sizes.keys():
+    image_array = image.to_dask()
+    raw_axes_order = image.sizes.keys()
+    image_array = np.moveaxis(image_array,
+                              range(len(raw_axes_order)), (axes_order.index(axis) for axis in raw_axes_order))
 
-        tile = image.to_dask()
+    if 'P' not in axes_order:
+
         tiles = np.empty((1, 1), dtype=object)
-        tiles[0, 0] = tile
+        tiles[0, 0] = image_array[slices]
         tiling = (1, 1)
         overlap = (0, 0)
-        image_shape = tile.shape
+        image_shape = image_array.shape
 
     else:
 
@@ -63,10 +75,9 @@ def parse(image, overlap, slices):
         height = y_ndim * image.attributes.heightPx - (y_ndim - 1) * round(image.attributes.heightPx * overlap[0])
 
         image_shape = None
-        image_array = image.to_dask()
         tiles = np.empty(shape=(y_ndim, x_ndim), dtype=object)
 
-        for n in range(image.sizes['P']):
+        for n in range(image_sizes['P']):
 
             tile = image_array[n]
             if tile.ndim > 2:

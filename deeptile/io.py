@@ -96,8 +96,10 @@ def from_nd2(image):
     """
 
     from deeptile.sources import nd2
-    image = nd2.read(image)
+    image, image_sizes, axes_order = nd2.read(image)
     dt = deeptile.DeepTileND2(image)
+    dt.image_sizes = image_sizes
+    dt.axes_order = axes_order
 
     return dt
 

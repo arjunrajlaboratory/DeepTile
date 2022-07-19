@@ -342,6 +342,8 @@ class DeepTileND2(DeepTile):
 
         super().__init__(image)
         self.image_type = 'nd2'
+        self.image_sizes = None
+        self.axes_order = None
 
     def get_tiles(self, overlap=(0.1, 0.1), slices=(slice(None))):
 
@@ -362,7 +364,8 @@ class DeepTileND2(DeepTile):
 
         from deeptile.sources import nd2
 
-        tiles, tiling, tile_size, overlap, self.image_shape = nd2.parse(self.image, overlap, slices)
+        tiles, tiling, tile_size, overlap, self.image_shape = nd2.parse(self.image, self.image_sizes, self.axes_order,
+                                                                        overlap, slices)
         _, tile_indices, border_indices = utils.calculate_indices(self.image_shape, tile_size, overlap)
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
