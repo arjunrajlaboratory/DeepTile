@@ -54,11 +54,12 @@ class DeepTile:
 
         job = Job(tiles, 'process', locals())
 
-        nonempty_indices = tiles[0].profile.nonempty_indices
+        profile = job.profile
+        nonempty_indices = profile.nonempty_indices
         nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
 
         output_type = utils.to_tuple(func_process.output_type)
-        processed_tiles = [np.empty_like(tiles[0]) for _ in range(len(output_type))]
+        processed_tiles = [np.empty(profile.tiling, dtype=object) for _ in range(len(output_type))]
 
         if batch_axis is not None:
             batch_axis_len = nonempty_tiles[0][0].shape[batch_axis]

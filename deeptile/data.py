@@ -29,7 +29,7 @@ class Data(np.ndarray):
 
         Returns
         -------
-            data : Tiled
+            data : Data
                 Data array.
         """
 
@@ -144,6 +144,22 @@ class Tiled(Data):
         return scales
 
     @cached_property
+    def nonempty_tiles(self):
+
+        """ Get a list of nonempty tiles.
+
+        Returns
+        -------
+            nonempty_tiles : list
+                List of nonempty tiles.
+        """
+
+        nonempty_indices = self.profile.nonempty_indices
+        nonempty_tiles = self[tuple(zip(*nonempty_indices))]
+
+        return nonempty_tiles
+
+    @cached_property
     def tile_indices(self):
 
         """ Calculate scaled tile indices.
@@ -178,22 +194,6 @@ class Tiled(Data):
                           np.rint(profile_border_indices[1] * scales[1]).astype(int))
 
         return border_indices
-
-    @cached_property
-    def nonempty_tiles(self):
-
-        """ Get a list of nonempty tiles.
-
-        Returns
-        -------
-            nonempty_tiles : list
-                List of nonempty tiles.
-        """
-
-        nonempty_indices = self.profile.nonempty_indices
-        nonempty_tiles = self[tuple(zip(*nonempty_indices))]
-
-        return nonempty_tiles
 
     @cached_property
     def indices_iterator(self):

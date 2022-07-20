@@ -1,7 +1,10 @@
 from deeptile.data import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
+from deeptile.iterators import ALLOWED_ITERATOR_TYPES
 from deeptile.utils import to_tuple
 from functools import partial as _partial
 from types import FunctionType
+
+ALLOWED_INPUT_TYPES = ALLOWED_TILED_TYPES + ALLOWED_ITERATOR_TYPES
 
 
 class AlgorithmBase:
@@ -87,7 +90,7 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
         default_batch_size = None
 
     for otype in to_tuple(input_type):
-        if otype not in ALLOWED_TILED_TYPES:
+        if otype not in ALLOWED_INPUT_TYPES:
             raise ValueError("Invalid input object type.")
 
     algorithm_type = None

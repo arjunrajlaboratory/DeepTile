@@ -1,4 +1,7 @@
 import numpy as np
+from functools import cached_property
+
+ALLOWED_ITERATOR_TYPES = ('index_iterator', 'tile_index_iterator', 'border_index_iterator', 'stitch_index_iterator')
 
 
 class Iterator:
@@ -7,8 +10,8 @@ class Iterator:
 
     Parameters
     ----------
-        profile : Profile
-            Tiling profile.
+        tiles : Tiled
+            Array of tiles.
         job : Job
             Job that generated this iterator object.
     """
@@ -19,15 +22,44 @@ class Iterator:
         self.profile = job.profile
         self.job = job
         self.tiles = tiles
+        self.otype = None
 
         if self.dt.link_data:
             self.job.output = self
+
+    @cached_property
+    def nonempty_tiles(self):
+
+        """ Get a list of nonempty tiles.
+
+        Returns
+        -------
+            nonempty_tiles : list
+                List of nonempty tiles.
+        """
+
+        nonempty_indices = self.profile.nonempty_indices
+        nonempty_tiles = [self[nonempty_index] for nonempty_index in nonempty_indices]
+
+        return nonempty_tiles
 
 
 class IndicesIterator(Iterator):
 
     """ Iterator subclass for array indices.
+
+    Parameters
+    ----------
+        tiles : Tiled
+            Array of tiles.
+        job : Job
+            Job that generated this iterator object.
     """
+
+    def __init__(self, tiles, job):
+
+        super().__init__(tiles, job)
+        self.otype = 'index_iterator'
 
     def __getitem__(self, index):
 
@@ -50,7 +82,19 @@ class IndicesIterator(Iterator):
 class TileIndicesIterator(Iterator):
 
     """ Iterator subclass for tile indices.
+
+    Parameters
+    ----------
+        tiles : Tiled
+            Array of tiles.
+        job : Job
+            Job that generated this iterator object.
     """
+
+    def __init__(self, tiles, job):
+
+        super().__init__(tiles, job)
+        self.otype = 'tile_index_iterator'
 
     def __getitem__(self, index):
 
@@ -78,7 +122,19 @@ class TileIndicesIterator(Iterator):
 class BorderIndicesIterator(Iterator):
 
     """ Iterator subclass for border indices.
+
+    Parameters
+    ----------
+        tiles : Tiled
+            Array of tiles.
+        job : Job
+            Job that generated this iterator object.
     """
+
+    def __init__(self, tiles, job):
+
+        super().__init__(tiles, job)
+        self.otype = 'border_index_iterator'
 
     def __getitem__(self, index):
 
@@ -106,7 +162,19 @@ class BorderIndicesIterator(Iterator):
 class StitchIndicesIterator(Iterator):
 
     """ Iterator subclass for stitch indices.
+
+    Parameters
+    ----------
+        tiles : Tiled
+            Array of tiles.
+        job : Job
+            Job that generated this iterator object.
     """
+
+    def __init__(self, tiles, job):
+
+        super().__init__(tiles, job)
+        self.otype = 'stitch_index_iterator'
 
     def __getitem__(self, index):
 
