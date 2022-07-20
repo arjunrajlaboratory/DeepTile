@@ -14,12 +14,12 @@ class Job:
         job_kwargs : dict
             Job keyword arguments.
         profile : Profile
-            New profile used when ``job_input`` is a tile source.
+            New tiling profile used when ``job_input`` is a tile source.
     """
 
     def __init__(self, job_input, job_type, job_kwargs, profile=None):
 
-        job_kwargs.pop('self')
+        job_kwargs.pop('self', None)
 
         if profile is None:
             self.profile = job_input[0].profile

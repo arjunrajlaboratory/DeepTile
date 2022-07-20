@@ -1,4 +1,7 @@
 import numpy as np
+from deeptile.iterators import IndicesIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
+from deeptile.jobs import Job
+from functools import cached_property
 
 ALLOWED_TILED_TYPES = ('tiled_image', 'tiled_coords')
 ALLOWED_STITCHED_TYPES = ('stitched_image', 'stitched_coords')
@@ -87,7 +90,96 @@ class Tiled(Data):
 
         return tiles
 
-    @property
+    @cached_property
+    def image_shape(self):
+
+        """ Calculate scaled image shape.
+
+        Returns
+        -------
+            image_shape : tuple of int
+                Scaled image shape.
+        """
+
+        image_shape = None
+
+        if self.otype == 'tiled_image':
+
+            profile = self.profile
+            tile_size = self[profile.nonempty_indices[0]].shape[-2:]
+            profile_tile_size = profile.tile_size
+            profile_image_shape = profile.dt.image_shape
+            scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
+            image_shape = (round(profile_image_shape[-2] * scales[0]), round(profile_image_shape[-1] * scales[1]))
+
+        elif self.otype == 'tiled_coords':
+
+            image_shape = self.dt.image_shape
+
+        return image_shape
+
+    @cached_property
+    def scales(self):
+
+        """ Calculate tile scales relative to profile tile sizes.
+
+        Returns
+        -------
+            scales : tuple of float
+                Tile scales relative to profile tile sizes.
+        """
+
+        scales = None
+
+        if self.otype == 'tiled_image':
+
+            profile_image_shape = self.dt.image_shape
+            image_shape = self.image_shape
+            scales = (image_shape[0] / profile_image_shape[-2], image_shape[1] / profile_image_shape[-1])
+
+        elif self.otype == 'tiled_coords':
+
+            scales = (1.0, 1.0)
+
+        return scales
+
+    @cached_property
+    def tile_indices(self):
+
+        """ Calculate scaled tile indices.
+
+        Returns
+        -------
+            tile_indices : tuple of numpy.ndarray
+                Scaled tile indices.
+        """
+
+        scales = self.scales
+        profile_tile_indices = self.profile.tile_indices
+        tile_indices = (np.rint(profile_tile_indices[0] * scales[0]).astype(int),
+                        np.rint(profile_tile_indices[1] * scales[1]).astype(int))
+
+        return tile_indices
+
+    @cached_property
+    def border_indices(self):
+
+        """ Calculate scaled border indices.
+
+        Returns
+        -------
+            border_indices : tuple of numpy.ndarray
+                Scaled border indices.
+        """
+
+        scales = self.scales
+        profile_border_indices = self.profile.border_indices
+        border_indices = (np.rint(profile_border_indices[0] * scales[0]).astype(int),
+                          np.rint(profile_border_indices[1] * scales[1]).astype(int))
+
+        return border_indices
+
+    @cached_property
     def nonempty_tiles(self):
 
         """ Get a list of nonempty tiles.
@@ -103,7 +195,71 @@ class Tiled(Data):
 
         return nonempty_tiles
 
-    @property
+    @cached_property
+    def indices_iterator(self):
+
+        """ Get a Tiled iterator for array indices.
+
+        Returns
+        -------
+            indices_iterator : IndicesIterator
+                Tiled iterator for array indices.
+        """
+
+        job = Job(self, 'get_iterator', {}, self.profile)
+        indices_iterator = IndicesIterator(self, job)
+
+        return indices_iterator
+
+    @cached_property
+    def tile_indices_iterator(self):
+
+        """ Get a Tiled iterator for tile indices.
+
+        Returns
+        -------
+            tile_indices_iterator : TileIndicesIterator
+                Tiled iterator for tile indices.
+        """
+
+        job = Job(self, 'get_iterator', {}, self.profile)
+        tile_indices_iterator = TileIndicesIterator(self, job)
+
+        return tile_indices_iterator
+
+    @cached_property
+    def border_indices_iterator(self):
+
+        """ Get a Tiled iterator for border indices.
+
+        Returns
+        -------
+            border_indices_iterator : BorderIndicesIterator
+                Tiled iterator for border indices.
+        """
+
+        job = Job(self, 'get_iterator', {}, self.profile)
+        border_indices_iterator = BorderIndicesIterator(self, job)
+
+        return border_indices_iterator
+
+    @cached_property
+    def stitch_indices_iterator(self):
+
+        """ Get a Tiled iterator for stitch indices.
+
+        Returns
+        -------
+            stitch_indices_iterator :
+                Tiled iterator for stitch indices.
+        """
+
+        job = Job(self, 'get_iterator', {}, self.profile)
+        stitch_indices_iterator = StitchIndicesIterator(self, job)
+
+        return stitch_indices_iterator
+
+    @cached_property
     def s(self):
 
         """ Get the Slice object for tile-wise slicing.
@@ -130,7 +286,7 @@ class Stitched(Data):
 
         Parameters
         ----------
-            stitched : numpy.ndarray or Stitched
+            stitched : numpy.ndarray
                 Stitched object.
             job : Job
                 Job that generated this stitched object.
@@ -154,7 +310,7 @@ class Slice:
 
     Parameters
     ----------
-        tiles : numpy.ndarray or Tiled
+        tiles : Tiled
             Array of tiles.
     """
 
@@ -168,7 +324,7 @@ class Slice:
 
         Parameters
         ----------
-            slices : tuple, optional, default (slice(None))
+            slices : tuple
                 Tuple of slice objects designating slices to be extracted.
 
         Returns
