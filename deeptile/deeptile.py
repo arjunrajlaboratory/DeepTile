@@ -182,48 +182,6 @@ class DeepTile:
         if func.algorithm_type != job_type:
             raise TypeError(f"func_{job_type} has the incorrect algorithm type of {func.algorithm_type}.")
 
-    @staticmethod
-    def _create_profile_kwargs(tiling, tile_size, overlap, slices,
-                               nonempty_indices, tile_indices, border_indices):
-
-        """ (For internal use) Create profile keyword arguments.
-
-        Parameters
-        ----------
-            tiling : tuple
-                Number of tiles in each dimension.
-            tile_size : tuple
-                Size of each tile.
-            overlap : tuple
-                Fractions of ``tile_size`` to use for overlap.
-            slices : tuple or int
-                Slices to be extracted.
-            nonempty_indices : tuple
-                Indices of nonempty tiles.
-            tile_indices : tuple
-                Indices of tiles.
-            border_indices : tuple
-                Indices of borders at the middle of tile overlaps.
-
-        Returns
-        -------
-            profile_kwargs : dict
-                Profile keyword arguments.
-
-        """
-
-        profile_kwargs = {
-            'tiling': tiling,
-            'tile_size': tile_size,
-            'overlap': overlap,
-            'slices': slices,
-            'nonempty_indices': nonempty_indices,
-            'tile_indices': tile_indices,
-            'border_indices': border_indices,
-        }
-
-        return profile_kwargs
-
 
 class DeepTileArray(DeepTile):
 
@@ -268,9 +226,7 @@ class DeepTileArray(DeepTile):
         tiles = utils.pad_tiles(tiles, tile_size, tile_indices)
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
-        profile_kwargs = self._create_profile_kwargs(tiling, tile_size, overlap, slices,
-                                                     nonempty_indices, tile_indices, border_indices)
-        profile = Profile(self, **profile_kwargs)
+        profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
         job = Job(self.image, 'get_tiles', locals(), profile)
         tiles = Tiled(tiles, job, 'tiled_image')
 
@@ -319,9 +275,7 @@ class DeepTileLargeImage(DeepTile):
         tiles = utils.pad_tiles(tiles, tile_size, tile_indices)
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
-        profile_kwargs = self._create_profile_kwargs(tiling, tile_size, overlap, slices,
-                                                     nonempty_indices, tile_indices, border_indices)
-        profile = Profile(self, **profile_kwargs)
+        profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
         job = Job(self.image, 'get_tiles', locals(), profile)
         tiles = Tiled(tiles, job, 'tiled_image')
 
@@ -369,9 +323,7 @@ class DeepTileND2(DeepTile):
         _, tile_indices, border_indices = utils.calculate_indices(self.image_shape, tile_size, overlap)
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
-        profile_kwargs = self._create_profile_kwargs(tiling, tile_size, overlap, slices,
-                                                     nonempty_indices, tile_indices, border_indices)
-        profile = Profile(self, **profile_kwargs)
+        profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
         job = Job(self.image, 'get_tiles', locals(), profile)
         tiles = Tiled(tiles, job, 'tiled_image')
 
