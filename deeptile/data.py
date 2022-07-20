@@ -91,9 +91,16 @@ class Tiled(Data):
     def s(self):
 
         """ Get the Slice object for tile-wise slicing.
+
+        Returns
+        -------
+            s : Slice
+                Slice object for tile-wise slicing.
         """
 
-        return Slice(self)
+        s = Slice(self)
+
+        return s
 
 
 class Stitched(Data):
