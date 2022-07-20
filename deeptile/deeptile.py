@@ -55,7 +55,7 @@ class DeepTile:
         job = Job(tiles, 'process', locals())
 
         nonempty_indices = tiles[0].profile.nonempty_indices
-        nonempty_tiles = [[ts[nonempty_index] for nonempty_index in nonempty_indices] for ts in tiles]
+        nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
 
         output_type = utils.to_tuple(func_process.output_type)
         processed_tiles = [np.empty_like(tiles[0]) for _ in range(len(output_type))]

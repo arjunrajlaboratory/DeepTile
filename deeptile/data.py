@@ -88,6 +88,22 @@ class Tiled(Data):
         return tiles
 
     @property
+    def nonempty_tiles(self):
+
+        """ Get a list of nonempty tiles.
+
+        Returns
+        -------
+            nonempty_tiles : list
+                List of nonempty tiles.
+        """
+
+        nonempty_indices = self.profile.nonempty_indices
+        nonempty_tiles = self[tuple(zip(*nonempty_indices))]
+
+        return nonempty_tiles
+
+    @property
     def s(self):
 
         """ Get the Slice object for tile-wise slicing.
@@ -164,8 +180,8 @@ class Slice:
         sliced_tiles = self.tiles.copy()
         sliced_tiles.parent = self.tiles.parent
         sliced_tiles.slices = self.tiles.slices + [slices]
-        nonempty_indices = self.tiles.profile.nonempty_indices
-        nonempty_tiles = sliced_tiles[tuple(zip(*nonempty_indices))]
+        nonempty_indices = sliced_tiles.profile.nonempty_indices
+        nonempty_tiles = sliced_tiles.nonempty_tiles
 
         for index, tile in zip(nonempty_indices, nonempty_tiles):
             sliced_tiles[index] = tile[slices]
