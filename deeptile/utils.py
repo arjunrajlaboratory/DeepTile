@@ -66,41 +66,6 @@ def get_nonempty_indices(tiles):
     return nonempty_indices
 
 
-def calculate_scaled_indices(tiles):
-
-    profile = tiles.profile
-    tile_size = tiles[profile.nonempty_indices[0]].shape[-2:]
-    profile_tile_size = profile.tile_size
-    profile_image_shape = profile.dt.image_shape
-    scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
-    image_shape = (round(profile_image_shape[-2] * scales[0]), round(profile_image_shape[-1] * scales[1]))
-    scales = (image_shape[0] / profile_image_shape[-2], image_shape[1] / profile_image_shape[-1])
-
-    profile_tile_indices = profile.tile_indices
-    profile_border_indices = profile.border_indices
-    tile_indices = (np.rint(profile_tile_indices[0] * scales[0]).astype(int),
-                    np.rint(profile_tile_indices[1] * scales[1]).astype(int))
-    border_indices = (np.rint(profile_border_indices[0] * scales[0]).astype(int),
-                      np.rint(profile_border_indices[1] * scales[1]).astype(int))
-
-    return image_shape, tile_indices, border_indices
-
-
-def calculate_stitch_indices(profile, tile_indices, border_indices):
-
-    stitch_indices = {}
-
-    for n_i, n_j in profile.nonempty_indices:
-
-        i_image = border_indices[0][n_i:n_i + 2]
-        j_image = border_indices[1][n_j:n_j + 2]
-        i = i_image - tile_indices[0][n_i, 0]
-        j = j_image - tile_indices[1][n_j, 0]
-        stitch_indices[(n_i, n_j)] = (i_image, j_image, i, j)
-
-    return stitch_indices
-
-
 def axis_take(ary, axis, index):
 
     return ary[(slice(None), ) * (axis % ary.ndim) + (index, )]
