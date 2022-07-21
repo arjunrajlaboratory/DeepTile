@@ -3,10 +3,8 @@ from deeptile import utils
 from deeptile.algorithms import partial, transform
 from deeptile.iterators import IndicesIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
 from deeptile.jobs import Job
+from deeptile.types import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
 from functools import cached_property
-
-ALLOWED_TILED_TYPES = ('tiled_image', 'tiled_coords')
-ALLOWED_STITCHED_TYPES = ('stitched_image', 'stitched_coords')
 
 
 class Data(np.ndarray):

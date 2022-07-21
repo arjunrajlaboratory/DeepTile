@@ -1,10 +1,7 @@
-from deeptile.data import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
-from deeptile.iterators import ALLOWED_ITERATOR_TYPES
+from deeptile.types import ALLOWED_INPUT_TYPES, ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
 from deeptile.utils import to_tuple
 from functools import partial as _partial
 from types import FunctionType
-
-ALLOWED_INPUT_TYPES = ALLOWED_TILED_TYPES + ALLOWED_ITERATOR_TYPES
 
 
 class AlgorithmBase:

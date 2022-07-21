@@ -1,8 +1,6 @@
 import numpy as np
 from functools import cached_property
 
-ALLOWED_ITERATOR_TYPES = ('index_iterator', 'tile_index_iterator', 'border_index_iterator', 'stitch_index_iterator')
-
 
 class Iterator:
 
