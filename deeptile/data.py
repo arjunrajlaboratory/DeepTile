@@ -5,6 +5,7 @@ from functools import cached_property
 
 ALLOWED_TILED_TYPES = ('tiled_image', 'tiled_coords')
 ALLOWED_STITCHED_TYPES = ('stitched_image', 'stitched_coords')
+ALLOWED_IMPORT_TYPES = tuple(otype.split('_')[-1] for otype in ALLOWED_TILED_TYPES)
 
 
 class Data(np.ndarray):
@@ -85,6 +86,47 @@ class Tiled(Data):
         tiles = super().__new__(cls, tiles, job, otype, ALLOWED_TILED_TYPES)
         tiles.parent = tiles
         tiles.slices = []
+
+        return tiles
+
+    def import_data(self, data, otype):
+
+        """ Import external data and tile using the same tiling profile.
+
+        Parameters
+        ----------
+            data
+                Data to be imported.
+            otype : str
+                Data object type.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        if otype not in ALLOWED_IMPORT_TYPES:
+            raise ValueError("Invalid data object type.")
+
+        if otype == 'image':
+
+            from deeptile import utils
+
+            tile_size = self[self.profile.nonempty_indices[0]].shape[-2:]
+            tiles = utils.array_split_2d(data, self.tile_indices)
+            tiles = utils.cast_list_to_array(tiles)
+            tiles = utils.pad_tiles(tiles, tile_size, self.tile_indices)
+
+            job = Job(data, 'import_data', locals(), self.profile)
+            tiles = Tiled(tiles, job, 'tiled_image')
+
+        elif otype == 'coords':
+
+            from deeptile.extensions.tile import tile_coords
+
+            tiles = self.dt.process(self.tile_indices_iterator, tile_coords(data))
+            tiles.job.type = 'import_data'
 
         return tiles
 
