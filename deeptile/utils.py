@@ -172,3 +172,12 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
                 ts[index] = new_tile
 
     return tiles
+
+
+def tile_coords(tile_index, coords):
+
+    s = (tile_index[0, 0] < coords[:, 0]) & (coords[:, 0] < tile_index[0, 1]) & \
+        (tile_index[1, 0] < coords[:, 1]) & (coords[:, 1] < tile_index[1, 1])
+    tile = coords[s] - tile_index[:, 0]
+
+    return tile

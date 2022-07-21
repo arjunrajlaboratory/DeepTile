@@ -1,1 +1,1 @@
-from deeptile.extensions import segmentation, stitch, tile
+from deeptile.extensions import segmentation, stitch

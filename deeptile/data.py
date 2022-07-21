@@ -1,11 +1,12 @@
 import numpy as np
+from deeptile import utils
+from deeptile.algorithms import partial, transform
 from deeptile.iterators import IndicesIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
 from deeptile.jobs import Job
 from functools import cached_property
 
 ALLOWED_TILED_TYPES = ('tiled_image', 'tiled_coords')
 ALLOWED_STITCHED_TYPES = ('stitched_image', 'stitched_coords')
-ALLOWED_IMPORT_TYPES = tuple(otype.split('_')[-1] for otype in ALLOWED_TILED_TYPES)
 
 
 class Data(np.ndarray):
@@ -89,7 +90,7 @@ class Tiled(Data):
 
         return tiles
 
-    def import_data(self, data, otype):
+    def import_data(self, data, data_type):
 
         """ Import external data and tile using the same tiling profile.
 
@@ -97,21 +98,21 @@ class Tiled(Data):
         ----------
             data
                 Data to be imported.
-            otype : str
+            data_type : str
                 Data object type.
 
         Returns
         -------
             tiles : Tiled
                 Array of tiles.
+
+        Raises
+        ------
+            ValueError
+                If ``data_type`` is invalid.
         """
 
-        if otype not in ALLOWED_IMPORT_TYPES:
-            raise ValueError("Invalid data object type.")
-
-        if otype == 'image':
-
-            from deeptile import utils
+        if data_type == 'image':
 
             tile_size = self[self.profile.nonempty_indices[0]].shape[-2:]
             tiles = utils.array_split_2d(data, self.tile_indices)
@@ -121,12 +122,16 @@ class Tiled(Data):
             job = Job(data, 'import_data', locals(), self.profile)
             tiles = Tiled(tiles, job, 'tiled_image')
 
-        elif otype == 'coords':
+        elif data_type == 'coords':
 
-            from deeptile.extensions.tile import tile_coords
-
-            tiles = self.dt.process(self.tile_indices_iterator, tile_coords(data))
+            func_tile = transform(partial(utils.tile_coords, coords=data), vectorized=False,
+                                  input_type='tile_index_iterator', output_type='tiled_coords')
+            tiles = self.dt.process(self.tile_indices_iterator, func_tile)
             tiles.job.type = 'import_data'
+
+        else:
+
+            raise ValueError("Invalid data object type.")
 
         return tiles
 
