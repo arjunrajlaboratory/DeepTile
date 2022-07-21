@@ -41,7 +41,6 @@ class Data(np.ndarray):
         data.dt = job.dt
         data.profile = job.profile
         data.job = job
-        data.id = None
         data.otype = otype
 
         if data.dt.link_data:
@@ -56,7 +55,6 @@ class Data(np.ndarray):
         self.dt = getattr(data, 'dt', None)
         self.profile = getattr(data, 'profile', None)
         self.job = getattr(data, 'job', None)
-        self.id = getattr(data, 'id', None)
         self.otype = getattr(data, 'otype', None)
 
 
