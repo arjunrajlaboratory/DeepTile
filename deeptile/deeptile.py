@@ -21,7 +21,7 @@ class DeepTile:
         self.image = image
         self.image_type = None
         self.image_shape = None
-        self.link_data = True
+        self.link_data = None
         self.profiles = []
 
     def process(self, tiles, func_process, batch_axis=None, batch_size=None, pad_final_batch=False):
@@ -155,9 +155,13 @@ class DeepTile:
         Raises
         ------
             ValueError
-                If ``tiles`` and ``func`` are not compatible.
+                If ``tiles`` has an input count that does not match the expected ``func`` input count.
             ValueError
-                If ``tiles`` were not created by this DeepTile object.
+                If ``tiles`` has an object type that does not match the expected ``func`` input object type.
+            ValueError
+                If ``tiles`` are not associated with this DeepTile object.
+            ValueError
+                If ``tiles`` do not all share a common profile.
             TypeError
                 If ``func`` has not been transformed to an instance of the Algorithm class.
             TypeError
@@ -171,11 +175,18 @@ class DeepTile:
         if num_expected != num_got:
             raise ValueError(f'Expected input count {num_expected}, got {num_got}.')
 
+        profile = None
         for i, ts in enumerate(tiles):
-            if self is not ts.dt:
-                raise ValueError("Tiles were not created by this DeepTile object.")
             if ts.otype != input_type[i]:
                 raise ValueError(f"Tile object type does not match the expected function input object type.")
+            if profile is None:
+                if ts.dt is self:
+                    profile = ts.profile
+                else:
+                    raise ValueError("Tiles are not associated with this DeepTile object.")
+            else:
+                if ts.profile is not profile:
+                    raise ValueError(f'Tiles must all share a common profile.')
 
         if not issubclass(type(func), AlgorithmBase):
             raise TypeError(f"func_{job_type} must be transformed to an instance of the Algorithm class.")
