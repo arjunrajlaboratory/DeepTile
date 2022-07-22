@@ -22,6 +22,11 @@ class AlgorithmBase:
 
         """ Placeholder callable.
 
+        Parameters
+        ----------
+            tile
+                Tile to be processed.
+
         Raises
         ------
             NotImplementedError
