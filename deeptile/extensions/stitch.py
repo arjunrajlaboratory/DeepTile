@@ -1,5 +1,6 @@
 import numpy as np
 
+from deeptile import utils
 from deeptile.algorithms import transform
 from skimage import measure
 
@@ -90,6 +91,8 @@ def stitch_masks(iou_threshold=0.1):
     """
 
     def func_stitch(masks):
+
+        masks = utils.unpad_tiles(masks)
 
         profile = masks.profile
         nonempty_indices = profile.nonempty_indices
