@@ -110,6 +110,10 @@ class Tiled(Data):
                 If ``data_type`` is invalid.
         """
 
+        job_kwargs = locals()
+        job_kwargs.pop('self')
+        job_kwargs.pop('data')
+
         if data_type == 'image':
 
             tile_size = self[self.profile.nonempty_indices[0]].shape[-2:]
@@ -117,7 +121,7 @@ class Tiled(Data):
             tiles = utils.cast_list_to_array(tiles)
             tiles = utils.pad_tiles(tiles, tile_size, self.tile_indices)
 
-            job = Job(data, 'import_data', locals(), self.profile)
+            job = Job(data, 'import_data', job_kwargs, self.profile)
             tiles = Tiled(tiles, job, 'tiled_image')
 
         elif data_type == 'coords':
@@ -126,6 +130,7 @@ class Tiled(Data):
                                   input_type='tile_index_iterator', output_type='tiled_coords')
             tiles = self.dt.process(self.tile_indices_iterator, func_tile)
             tiles.job.type = 'import_data'
+            tiles.job.kwargs = job_kwargs
 
         else:
 
@@ -249,8 +254,7 @@ class Tiled(Data):
                 Tiled iterator for array indices.
         """
 
-        job = Job(self, 'get_iterator', {}, self.profile)
-        indices_iterator = IndicesIterator(self, job)
+        indices_iterator = IndicesIterator(self)
 
         return indices_iterator
 
@@ -265,8 +269,7 @@ class Tiled(Data):
                 Tiled iterator for tile indices.
         """
 
-        job = Job(self, 'get_iterator', {}, self.profile)
-        tile_indices_iterator = TileIndicesIterator(self, job)
+        tile_indices_iterator = TileIndicesIterator(self)
 
         return tile_indices_iterator
 
@@ -281,8 +284,7 @@ class Tiled(Data):
                 Tiled iterator for border indices.
         """
 
-        job = Job(self, 'get_iterator', {}, self.profile)
-        border_indices_iterator = BorderIndicesIterator(self, job)
+        border_indices_iterator = BorderIndicesIterator(self)
 
         return border_indices_iterator
 
@@ -293,12 +295,11 @@ class Tiled(Data):
 
         Returns
         -------
-            stitch_indices_iterator :
+            stitch_indices_iterator : StitchIndicesIterator
                 Tiled iterator for stitch indices.
         """
 
-        job = Job(self, 'get_iterator', {}, self.profile)
-        stitch_indices_iterator = StitchIndicesIterator(self, job)
+        stitch_indices_iterator = StitchIndicesIterator(self)
 
         return stitch_indices_iterator
 

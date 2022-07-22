@@ -49,10 +49,14 @@ class DeepTile:
                 Array of tiles after processing with ``func_process``.
         """
 
+        job_kwargs = locals()
+        job_kwargs.pop('self')
+        job_kwargs.pop('tiles')
+
         tiles = utils.to_tuple(tiles)
         self._check_compatibility(tiles, func_process, 'process')
 
-        job = Job(tiles, 'process', locals())
+        job = Job(tiles, 'process', job_kwargs)
 
         profile = job.profile
         nonempty_indices = profile.nonempty_indices
@@ -129,10 +133,14 @@ class DeepTile:
                 Stitched array.
         """
 
+        job_kwargs = locals()
+        job_kwargs.pop('self')
+        job_kwargs.pop('tiles')
+
         tiles = utils.to_tuple(tiles)
         self._check_compatibility(tiles, func_stitch, 'stitch')
 
-        job = Job(tiles, 'stitch', locals())
+        job = Job(tiles, 'stitch', job_kwargs)
 
         stitched = func_stitch(*tiles)
         stitched = Stitched(stitched, job, func_stitch.output_type)
@@ -229,6 +237,9 @@ class DeepTileArray(DeepTile):
                 Array of tiles.
         """
 
+        job_kwargs = locals()
+        job_kwargs.pop('self')
+
         image = self.image[slices]
         self.image_shape = image.shape
 
@@ -239,7 +250,7 @@ class DeepTileArray(DeepTile):
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
-        job = Job(self.image, 'get_tiles', locals(), profile)
+        job = Job(self.image, 'get_tiles', job_kwargs, profile)
         tiles = Tiled(tiles, job, 'tiled_image')
 
         return tiles
@@ -279,6 +290,9 @@ class DeepTileLargeImage(DeepTile):
                 Array of tiles.
         """
 
+        job_kwargs = locals()
+        job_kwargs.pop('self')
+
         from deeptile.sources import large_image
 
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
@@ -288,7 +302,7 @@ class DeepTileLargeImage(DeepTile):
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
-        job = Job(self.image, 'get_tiles', locals(), profile)
+        job = Job(self.image, 'get_tiles', job_kwargs, profile)
         tiles = Tiled(tiles, job, 'tiled_image')
 
         return tiles
@@ -328,6 +342,9 @@ class DeepTileND2(DeepTile):
                 Array of tiles.
         """
 
+        job_kwargs = locals()
+        job_kwargs.pop('self')
+
         from deeptile.sources import nd2
 
         tiles, tiling, tile_size, overlap, self.image_shape = nd2.parse(self.image, self.image_sizes, self.axes_order,
@@ -336,7 +353,7 @@ class DeepTileND2(DeepTile):
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
-        job = Job(self.image, 'get_tiles', locals(), profile)
+        job = Job(self.image, 'get_tiles', job_kwargs, profile)
         tiles = Tiled(tiles, job, 'tiled_image')
 
         return tiles

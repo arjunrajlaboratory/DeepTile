@@ -10,20 +10,31 @@ class Iterator:
     ----------
         tiles : Tiled
             Array of tiles.
-        job : Job
-            Job that generated this iterator object.
     """
 
-    def __init__(self, tiles, job):
+    def __init__(self, tiles):
 
-        self.dt = job.dt
-        self.profile = job.profile
-        self.job = job
+        self.dt = tiles.dt
+        self.profile = tiles.profile
         self.tiles = tiles
         self.otype = None
 
-        if self.dt.link_data:
-            self.job.output = self
+    def __getitem__(self, index):
+
+        """ Placeholder __getitem__ method.
+
+        Parameters
+        ----------
+            index : tuple of int
+                Array index.
+
+        Raises
+        ------
+            NotImplementedError
+                If no __getitem__ method has been set.
+        """
+
+        raise NotImplementedError("No __getitem__ method has been set.")
 
     @cached_property
     def nonempty_tiles(self):
@@ -50,13 +61,11 @@ class IndicesIterator(Iterator):
     ----------
         tiles : Tiled
             Array of tiles.
-        job : Job
-            Job that generated this iterator object.
     """
 
-    def __init__(self, tiles, job):
+    def __init__(self, tiles):
 
-        super().__init__(tiles, job)
+        super().__init__(tiles)
         self.otype = 'index_iterator'
 
     def __getitem__(self, index):
@@ -85,13 +94,11 @@ class TileIndicesIterator(Iterator):
     ----------
         tiles : Tiled
             Array of tiles.
-        job : Job
-            Job that generated this iterator object.
     """
 
-    def __init__(self, tiles, job):
+    def __init__(self, tiles):
 
-        super().__init__(tiles, job)
+        super().__init__(tiles)
         self.otype = 'tile_index_iterator'
 
     def __getitem__(self, index):
@@ -125,13 +132,11 @@ class BorderIndicesIterator(Iterator):
     ----------
         tiles : Tiled
             Array of tiles.
-        job : Job
-            Job that generated this iterator object.
     """
 
-    def __init__(self, tiles, job):
+    def __init__(self, tiles):
 
-        super().__init__(tiles, job)
+        super().__init__(tiles)
         self.otype = 'border_index_iterator'
 
     def __getitem__(self, index):
@@ -165,13 +170,11 @@ class StitchIndicesIterator(Iterator):
     ----------
         tiles : Tiled
             Array of tiles.
-        job : Job
-            Job that generated this iterator object.
     """
 
-    def __init__(self, tiles, job):
+    def __init__(self, tiles):
 
-        super().__init__(tiles, job)
+        super().__init__(tiles)
         self.otype = 'stitch_index_iterator'
 
     def __getitem__(self, index):

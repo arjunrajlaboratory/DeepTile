@@ -19,8 +19,6 @@ class Job:
 
     def __init__(self, job_input, job_type, job_kwargs, profile=None):
 
-        job_kwargs.pop('self', None)
-
         if profile is None:
             self.profile = job_input[0].profile
         else:
