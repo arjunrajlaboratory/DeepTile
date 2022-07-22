@@ -380,8 +380,8 @@ class Slice:
         sliced_tiles = self.tiles.copy()
         sliced_tiles.parent = self.tiles.parent
         sliced_tiles.slices = self.tiles.slices + [slices]
-        nonempty_indices = sliced_tiles.profile.nonempty_indices
-        nonempty_tiles = sliced_tiles.nonempty_tiles
+        nonempty_indices = self.tiles.profile.nonempty_indices
+        nonempty_tiles = self.tiles.nonempty_tiles
 
         for index, tile in zip(nonempty_indices, nonempty_tiles):
             sliced_tiles[index] = tile[slices]
