@@ -1,7 +1,7 @@
 import numpy as np
 
-from deeptile import utils
-from deeptile.algorithms import transform
+from deeptile.core import utils
+from deeptile.core.algorithms import transform
 from skimage import measure
 
 

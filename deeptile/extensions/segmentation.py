@@ -1,5 +1,5 @@
 import numpy as np
-from deeptile.algorithms import transform
+from deeptile.core.algorithms import transform
 
 
 def cellpose_segmentation(model_parameters, eval_parameters):

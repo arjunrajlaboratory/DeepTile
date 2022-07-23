@@ -1,5 +1,5 @@
-from deeptile.types import ALLOWED_INPUT_TYPES, ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
-from deeptile.utils import to_tuple
+from deeptile.core.types import ALLOWED_INPUT_TYPES, ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
+from deeptile.core.utils import to_tuple
 from functools import partial as _partial
 from types import FunctionType
 

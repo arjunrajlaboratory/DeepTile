@@ -1,9 +1,9 @@
 import numpy as np
-from deeptile import utils
-from deeptile.algorithms import AlgorithmBase
-from deeptile.data import Tiled, Stitched
-from deeptile.jobs import Job
-from deeptile.profiles import Profile
+from deeptile.core import utils
+from deeptile.core.algorithms import AlgorithmBase
+from deeptile.core.data import Tiled, Stitched
+from deeptile.core.jobs import Job
+from deeptile.core.profiles import Profile
 
 
 class DeepTile:
@@ -162,6 +162,10 @@ class DeepTile:
 
         Raises
         ------
+            TypeError
+                If ``func`` has not been transformed to an instance of the Algorithm class.
+            TypeError
+                If ``func`` has the incorrect algorithm type.
             ValueError
                 If ``tiles`` has an input count that does not match the expected ``func`` input count.
             ValueError
@@ -170,11 +174,13 @@ class DeepTile:
                 If ``tiles`` are not associated with this DeepTile object.
             ValueError
                 If ``tiles`` do not all share a common profile.
-            TypeError
-                If ``func`` has not been transformed to an instance of the Algorithm class.
-            TypeError
-                If ``func`` has the incorrect algorithm type.
         """
+
+        if not issubclass(type(func), AlgorithmBase):
+            raise TypeError(f"func_{job_type} must be transformed to an instance of the Algorithm class.")
+
+        if func.algorithm_type != job_type:
+            raise TypeError(f"func_{job_type} has the incorrect algorithm type of {func.algorithm_type}.")
 
         input_type = utils.to_tuple(func.input_type)
         num_expected = len(input_type)
@@ -195,12 +201,6 @@ class DeepTile:
             else:
                 if ts.profile is not profile:
                     raise ValueError(f'Tiles must all share a common profile.')
-
-        if not issubclass(type(func), AlgorithmBase):
-            raise TypeError(f"func_{job_type} must be transformed to an instance of the Algorithm class.")
-
-        if func.algorithm_type != job_type:
-            raise TypeError(f"func_{job_type} has the incorrect algorithm type of {func.algorithm_type}.")
 
 
 class DeepTileArray(DeepTile):

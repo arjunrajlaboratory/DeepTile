@@ -1,9 +1,9 @@
 import numpy as np
-from deeptile import utils
-from deeptile.algorithms import partial, transform
-from deeptile.iterators import IndicesIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
-from deeptile.jobs import Job
-from deeptile.types import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
+from deeptile.core import utils
+from deeptile.core.algorithms import partial, transform
+from deeptile.core.iterators import IndicesIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
+from deeptile.core.jobs import Job
+from deeptile.core.types import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
 from functools import cached_property
 
 

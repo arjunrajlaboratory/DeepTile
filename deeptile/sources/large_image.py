@@ -1,7 +1,7 @@
 import dask.array as da
 import numpy as np
 from dask import delayed
-from deeptile import utils
+from deeptile.core import utils
 
 
 def parse(image, image_shape, tile_size, overlap, slices):
