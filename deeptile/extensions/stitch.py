@@ -70,7 +70,7 @@ def stitch_tiles(blend=True, sigma=5):
 
         return stitched
 
-    func_stitch = transform(func_stitch, vectorized=False, output_type='stitched_image')
+    func_stitch = transform(func_stitch, output_type='stitched_image')
 
     return func_stitch
 
@@ -90,7 +90,9 @@ def stitch_masks(iou_threshold=0.1):
             Algorithm object with a mask stitching algorithm as the callable.
     """
 
-    def func_stitch(masks):
+    def func_stitch(tiles):
+
+        masks = tiles
 
         masks = utils.unpad_tiles(masks)
 
@@ -161,7 +163,7 @@ def stitch_masks(iou_threshold=0.1):
 
         return stitched_mask
 
-    func_stitch = transform(func_stitch, vectorized=False, output_type='stitched_image')
+    func_stitch = transform(func_stitch, output_type='stitched_image')
 
     return func_stitch
 
@@ -176,7 +178,9 @@ def stitch_coords():
             Algorithm object with a coordinate stitching algorithm as the callable.
     """
 
-    def func_stitch(coords):
+    def func_stitch(tiles):
+
+        coords = tiles
 
         profile = coords.profile
         nonempty_indices = profile.nonempty_indices
@@ -205,7 +209,7 @@ def stitch_coords():
 
         return stitched_coords
 
-    func_stitch = transform(func_stitch, vectorized=False, input_type='tiled_coords', output_type='stitched_coords')
+    func_stitch = transform(func_stitch, input_type='tiled_coords', output_type='stitched_coords')
 
     return func_stitch
 

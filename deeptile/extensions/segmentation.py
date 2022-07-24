@@ -31,7 +31,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
         return mask
 
-    func_segment = transform(func_segment, vectorized=False)
+    func_segment = transform(func_segment)
 
     return func_segment
 
@@ -57,15 +57,15 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
     model = Mesmer(**model_parameters)
 
-    def func_segment(tile):
+    def func_segment(tiles):
 
-        tile = np.moveaxis(tile, 1, -1)
-        mask = model.predict(tile, batch_size=tile.shape[0], **eval_parameters)
-        mask = np.moveaxis(mask, -1, 1)
+        tiles = np.moveaxis(tiles, 1, -1)
+        masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)
+        masks = np.moveaxis(masks, -1, 1)
 
-        return mask
+        return masks
 
-    func_segment = transform(func_segment, vectorized=True)
+    func_segment = transform(func_segment)
 
     return func_segment
 
@@ -91,14 +91,14 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
     model = NuclearSegmentation(**model_parameters)
 
-    def func_segment(tile):
+    def func_segment(tiles):
 
-        tile = np.expand_dims(tile, axis=-1)
-        mask = model.predict(tile, batch_size=tile.shape[0], **eval_parameters)[:, :, :, 0]
+        tiles = np.expand_dims(tiles, axis=-1)
+        masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)[:, :, :, 0]
 
-        return mask
+        return masks
 
-    func_segment = transform(func_segment, vectorized=True)
+    func_segment = transform(func_segment)
 
     return func_segment
 
@@ -124,13 +124,13 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
     model = CytoplasmSegmentation(**model_parameters)
 
-    def func_segment(tile):
+    def func_segment(tiles):
 
-        tile = np.expand_dims(tile, axis=-1)
-        mask = model.predict(tile, batch_size=tile.shape[0], **eval_parameters)[:, :, :, 0]
+        tiles = np.expand_dims(tiles, axis=-1)
+        masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)[:, :, :, 0]
 
-        return mask
+        return masks
 
-    func_segment = transform(func_segment, vectorized=True)
+    func_segment = transform(func_segment)
 
     return func_segment

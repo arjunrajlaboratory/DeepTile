@@ -126,7 +126,7 @@ class Tiled(Data):
 
         elif data_type == 'coords':
 
-            func_tile = transform(partial(utils.tile_coords, coords=data), vectorized=False,
+            func_tile = transform(partial(utils.tile_coords, coords=data),
                                   input_type='tile_index_iterator', output_type='tiled_coords')
             tiles = self.dt.process(self.tile_indices_iterator, func_tile)
             tiles.job.type = 'import_data'

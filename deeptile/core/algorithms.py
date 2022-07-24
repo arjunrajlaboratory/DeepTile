@@ -1,6 +1,7 @@
 from deeptile.core.types import ALLOWED_INPUT_TYPES, ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
 from deeptile.core.utils import to_tuple
 from functools import partial as _partial
+from inspect import signature
 from types import FunctionType
 
 
@@ -58,7 +59,7 @@ class AlgorithmBase:
         return Algorithm
 
 
-def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_image', output_type='tiled_image'):
+def transform(func, input_type='tiled_image', output_type='tiled_image', default_batch_size=8):
 
     """ Transform callable into an instance of the Algorithm class.
 
@@ -66,14 +67,12 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
     ----------
         func : callable
             Callable for use in tile processing and stitching.
-        vectorized : bool
-            Whether the algorithm is vectorized to support batching.
-        default_batch_size : int or None, optional, default None
-            Default number of tiles in each batch. If ``vectorized`` is ``False``, this value is set to ``None``.
         input_type : str or tuple of str
             Object type of algorithm input.
         output_type : str or tuple of str
             Object type of algorithm output.
+        default_batch_size : int or None, optional, default None
+            Default number of tiles in each batch. If ``func`` does not support batching, this value is set to ``None``.
 
     Returns
     -------
@@ -83,40 +82,67 @@ def transform(func, vectorized=False, default_batch_size=8, input_type='tiled_im
     Raises
     ------
         ValueError
+            If ``func`` has both tile and tiles arguments for the Tiled input.
+        ValueError
+            If ``func`` has no argument for the Tiled input.
+        ValueError
             If ``input_type`` is invalid.
         ValueError
             If ``output_type`` is invalid.
     """
 
-    if not vectorized:
+    arg_names = signature(func).parameters.keys()
+
+    if ('tile' in arg_names) & ('tiles' in arg_names):
+        raise ValueError('func has both tile and tiles arguments for the Tiled input.')
+
+    algorithm_type = None
+    allowed_output_types = ()
+    batching = None
+
+    if isinstance(output_type, str):
+        first_otype = output_type
+    else:
+        first_otype = output_type[0]
+
+    if first_otype in ALLOWED_TILED_TYPES:
+
+        algorithm_type = 'process'
+        allowed_output_types = ALLOWED_TILED_TYPES
+
+        if 'tile' in arg_names:
+            batching = False
+        elif 'tiles' in arg_names:
+            batching = True
+        else:
+            raise ValueError('func has no argument for the Tiled input.')
+
+    elif first_otype in ALLOWED_STITCHED_TYPES:
+
+        algorithm_type = 'stitch'
+        allowed_output_types = ALLOWED_STITCHED_TYPES
+        batching = False
+
+        if 'tiles' not in arg_names:
+            raise ValueError('func has no argument for the Tiled input.')
+
+    if not batching:
         default_batch_size = None
 
     for otype in to_tuple(input_type):
         if otype not in ALLOWED_INPUT_TYPES:
             raise ValueError("Invalid input object type.")
 
-    algorithm_type = None
-    allowed_output_types = ()
-    if isinstance(output_type, tuple):
-        first_otype = output_type[0]
-    else:
-        first_otype = output_type
-    if first_otype in ALLOWED_TILED_TYPES:
-        algorithm_type = 'process'
-        allowed_output_types = ALLOWED_TILED_TYPES
-    elif first_otype in ALLOWED_STITCHED_TYPES:
-        algorithm_type = 'stitch'
-        allowed_output_types = ALLOWED_STITCHED_TYPES
     for otype in to_tuple(output_type):
         if otype not in allowed_output_types:
             raise ValueError("Invalid output object type.")
 
     algorithm_kwargs = {
-        'vectorized': vectorized,
-        'default_batch_size': default_batch_size,
         'algorithm_type': algorithm_type,
         'input_type': input_type,
-        'output_type': output_type
+        'output_type': output_type,
+        'batching': batching,
+        'default_batch_size': default_batch_size
     }
 
     transformed_func = AlgorithmBase.set_callable(func)(**algorithm_kwargs)

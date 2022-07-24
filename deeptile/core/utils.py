@@ -1,10 +1,11 @@
 import numpy as np
+from collections.abc import Sequence
 from dask.array import Array
 
 
 def to_tuple(obj):
 
-    if not isinstance(obj, tuple):
+    if isinstance(obj, str) or (not isinstance(obj, Sequence)):
         obj = (obj, )
 
     return obj
@@ -193,10 +194,12 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
     return tiles
 
 
-def tile_coords(tile_index, coords):
+def tile_coords(coords, tile):
+
+    tile_index = tile
 
     s = (tile_index[0, 0] < coords[:, 0]) & (coords[:, 0] < tile_index[0, 1]) & \
         (tile_index[1, 0] < coords[:, 1]) & (coords[:, 1] < tile_index[1, 1])
-    tile = coords[s] - tile_index[:, 0]
+    coords = coords[s] - tile_index[:, 0]
 
-    return tile
+    return coords

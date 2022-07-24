@@ -38,10 +38,10 @@ class DeepTile:
                 Image axis used to create batches during processing. If ``None``, no batch axis will be used.
             batch_size : int or None, optional, default None
                 Number of tiles in each batch. If ``None``, the default batching configuration will be determined by
-                ``func_process``. If ``func_process`` is not vectorized, this value is ignored.
+                ``func_process``. If ``func_process`` does not support batching, this value is ignored.
             pad_final_batch : bool, optional, default False
-                Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` is not vectorized,
-                this value is ignored.
+                Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
+                batching, this value is ignored.
 
         Returns
         -------
@@ -62,6 +62,8 @@ class DeepTile:
         nonempty_indices = profile.nonempty_indices
         nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
 
+        unpack_input_singleton = isinstance(func_process.input_type, str)
+        unpack_output_singleton = isinstance(func_process.output_type, str)
         output_type = utils.to_tuple(func_process.output_type)
         processed_tiles = [np.empty(profile.tiling, dtype=object) for _ in range(len(output_type))]
 
@@ -71,7 +73,7 @@ class DeepTile:
             nonempty_tiles = [[subt for t in ts for subt in list(np.moveaxis(t, batch_axis, 0))]
                               for ts in nonempty_tiles]
 
-        if func_process.vectorized:
+        if func_process.batching:
 
             if batch_size is None:
                 batch_size = func_process.default_batch_size
@@ -85,8 +87,10 @@ class DeepTile:
                 if pad_final_batch & (batch_tiles[0].shape[0] < batch_size):
                     batch_tiles = [utils.array_pad(ts, batch_size - ts.shape[0], 0) for ts in batch_tiles]
                 batch_tiles = utils.compute_dask(batch_tiles)
+                if unpack_input_singleton:
+                    batch_tiles = batch_tiles[0]
 
-                processed_batch_tiles = func_process(*batch_tiles)
+                processed_batch_tiles = func_process(batch_tiles)
                 processed_batch_tiles = utils.to_tuple(processed_batch_tiles)
 
                 for i_batch, index in enumerate(batch_indices):
@@ -101,15 +105,17 @@ class DeepTile:
 
                 tile = [ts[i_nonempty] for ts in nonempty_tiles]
                 tile = utils.compute_dask(tile)
+                if unpack_input_singleton:
+                    tile = tile[0]
 
-                processed_tile = func_process(*tile)
+                processed_tile = func_process(tile)
                 processed_tile = utils.to_tuple(processed_tile)
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                      output_type)
 
         processed_tiles = [Tiled(ts, job, otype) for ts, otype in zip(processed_tiles, output_type)]
 
-        if len(processed_tiles) == 1:
+        if unpack_output_singleton:
             processed_tiles = processed_tiles[0]
         else:
             processed_tiles = tuple(processed_tiles)
