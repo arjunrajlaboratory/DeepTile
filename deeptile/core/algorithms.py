@@ -89,6 +89,8 @@ def transform(func, input_type='tiled_image', output_type='tiled_image', default
             If ``input_type`` is invalid.
         ValueError
             If ``output_type`` is invalid.
+        ValueError
+            If ``default_batch_size`` is invalid.
     """
 
     arg_names = signature(func).parameters.keys()
@@ -126,9 +128,6 @@ def transform(func, input_type='tiled_image', output_type='tiled_image', default
         if 'tiles' not in arg_names:
             raise ValueError('func has no argument for the Tiled input.')
 
-    if not batching:
-        default_batch_size = None
-
     for otype in to_tuple(input_type):
         if otype not in ALLOWED_INPUT_TYPES:
             raise ValueError("invalid input object type.")
@@ -136,6 +135,11 @@ def transform(func, input_type='tiled_image', output_type='tiled_image', default
     for otype in to_tuple(output_type):
         if otype not in allowed_output_types:
             raise ValueError("invalid output object type.")
+
+    if not batching:
+        default_batch_size = None
+    elif not isinstance(default_batch_size, int):
+        raise ValueError("invalid default batch size.")
 
     algorithm_kwargs = {
         'algorithm_type': algorithm_type,
