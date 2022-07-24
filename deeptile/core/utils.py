@@ -158,7 +158,7 @@ def check_data_count(data, input_type=None, output_type=None):
     num_got = len(data)
 
     if num_expected != num_got:
-        raise ValueError(f'Expected {count_desc} count {num_expected}, got {num_got}.')
+        raise ValueError(f'expected {count_desc} count {num_expected}, got {num_got}.')
 
 
 def compute_dask(tiles):

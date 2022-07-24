@@ -208,15 +208,15 @@ class DeepTile:
         profile = None
         for i, ts in enumerate(tiles):
             if ts.otype != input_type[i]:
-                raise ValueError(f"Tile object type does not match the expected function input object type.")
+                raise ValueError(f"tile object type does not match the expected function input object type.")
             if profile is None:
                 if ts.dt is self:
                     profile = ts.profile
                 else:
-                    raise ValueError("Tiles are not associated with this DeepTile object.")
+                    raise ValueError("tiles are not associated with this DeepTile object.")
             else:
                 if ts.profile is not profile:
-                    raise ValueError(f'Tiles must all share a common profile.')
+                    raise ValueError(f'tiles must all share a common profile.')
 
 
 class DeepTileArray(DeepTile):

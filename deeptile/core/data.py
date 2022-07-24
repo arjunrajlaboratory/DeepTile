@@ -31,12 +31,17 @@ class Data(np.ndarray):
         -------
             data : Data
                 Data array.
+
+        Raises
+        ------
+            ValueError
+                If ``otype`` is invalid.
         """
 
         data = np.asarray(data).view(cls)
 
         if otype not in allowed_otypes:
-            raise ValueError("Invalid tiled object type.")
+            raise ValueError("invalid data object type.")
 
         data.dt = job.dt
         data.profile = job.profile
@@ -134,7 +139,7 @@ class Tiled(Data):
 
         else:
 
-            raise ValueError("Invalid data object type.")
+            raise ValueError("invalid data object type.")
 
         return tiles
 

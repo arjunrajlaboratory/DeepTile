@@ -67,7 +67,7 @@ def parse(image, image_sizes, axes_order, overlap, slices):
                 1]) / image.attributes.heightPx, 2)
 
             if not ((0 < x_overlap < 1) & (0 < y_overlap < 1)):
-                raise RuntimeError("Failed to determine overlap percentage from metadata.")
+                raise RuntimeError("failed to determine overlap percentage from metadata.")
 
             overlap = (y_overlap, x_overlap)
 

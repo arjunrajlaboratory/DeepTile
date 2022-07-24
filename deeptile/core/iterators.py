@@ -34,7 +34,7 @@ class Iterator:
                 If no __getitem__ method has been set.
         """
 
-        raise NotImplementedError("No __getitem__ method has been set.")
+        raise NotImplementedError("no __getitem__ method has been set.")
 
     @cached_property
     def nonempty_tiles(self):

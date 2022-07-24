@@ -34,7 +34,7 @@ class AlgorithmBase:
                 If no callable has been set.
         """
 
-        raise NotImplementedError("No callable has been set.")
+        raise NotImplementedError("no callable has been set.")
 
     @classmethod
     def set_callable(cls, func):
@@ -131,11 +131,11 @@ def transform(func, input_type='tiled_image', output_type='tiled_image', default
 
     for otype in to_tuple(input_type):
         if otype not in ALLOWED_INPUT_TYPES:
-            raise ValueError("Invalid input object type.")
+            raise ValueError("invalid input object type.")
 
     for otype in to_tuple(output_type):
         if otype not in allowed_output_types:
-            raise ValueError("Invalid output object type.")
+            raise ValueError("invalid output object type.")
 
     algorithm_kwargs = {
         'algorithm_type': algorithm_type,
@@ -170,6 +170,6 @@ def partial(func, *args, **kwargs):
     elif isinstance(func, AlgorithmBase):
         func = func.set_callable(_partial(func.__call__, *args, **kwargs))(**vars(func))
     else:
-        raise ValueError("Invalid function type.")
+        raise ValueError("invalid function type.")
 
     return func
