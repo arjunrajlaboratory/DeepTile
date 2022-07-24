@@ -90,7 +90,7 @@ class DeepTile:
                 if unpack_input_singleton:
                     batch_tiles = batch_tiles[0]
 
-                processed_batch_tiles = func_process(batch_tiles)
+                processed_batch_tiles = func_process(tiles=batch_tiles)
                 processed_batch_tiles = utils.to_tuple(processed_batch_tiles)
 
                 for i_batch, index in enumerate(batch_indices):
@@ -108,7 +108,7 @@ class DeepTile:
                 if unpack_input_singleton:
                     tile = tile[0]
 
-                processed_tile = func_process(tile)
+                processed_tile = func_process(tile=tile)
                 processed_tile = utils.to_tuple(processed_tile)
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                      output_type)
@@ -148,7 +148,7 @@ class DeepTile:
 
         job = Job(tiles, 'stitch', job_kwargs)
 
-        stitched = func_stitch(*tiles)
+        stitched = func_stitch(tiles=tiles)
         stitched = Stitched(stitched, job, func_stitch.output_type)
 
         return stitched
