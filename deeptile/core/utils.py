@@ -178,7 +178,7 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
         t = tile[i_output]
         otype = output_type[i_output]
 
-        if (batch_axis is None) and (otype == 'tiled_image') and :
+        if (batch_axis is None) and (otype == 'tiled_image'):
 
             ts[index] = t
 
