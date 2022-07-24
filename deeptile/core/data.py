@@ -53,7 +53,7 @@ class Data(np.ndarray):
 
         return data
 
-    def __array_finalize__(self, data):
+    def __array_finalize__(self, data, *args, **kwargs):
 
         if data is None:
             return
