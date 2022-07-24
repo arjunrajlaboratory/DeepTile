@@ -96,6 +96,7 @@ class DeepTile:
                 for i_batch, index in enumerate(batch_indices):
 
                     processed_tile = tuple(ts[i_batch] for ts in processed_batch_tiles)
+                    utils.check_data_count(processed_tile, output_type=output_type)
                     processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                          output_type)
 
@@ -110,6 +111,7 @@ class DeepTile:
 
                 processed_tile = func_process(tile=tile)
                 processed_tile = utils.to_tuple(processed_tile)
+                utils.check_data_count(processed_tile, output_type=output_type)
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                      output_type)
 
@@ -157,6 +159,7 @@ class DeepTile:
 
         stitched = func_stitch(tiles=tiles)
         stitched = utils.to_tuple(stitched)
+        utils.check_data_count(stitched, output_type=output_type)
         stitched = [Stitched(s, job, otype) for s, otype in zip(stitched, output_type)]
 
         if unpack_output_singleton:
@@ -186,8 +189,6 @@ class DeepTile:
             TypeError
                 If ``func`` has the incorrect algorithm type.
             ValueError
-                If ``tiles`` has an input count that does not match the expected ``func`` input count.
-            ValueError
                 If ``tiles`` has an object type that does not match the expected ``func`` input object type.
             ValueError
                 If ``tiles`` are not associated with this DeepTile object.
@@ -202,11 +203,7 @@ class DeepTile:
             raise TypeError(f"func_{job_type} has the incorrect algorithm type of {func.algorithm_type}.")
 
         input_type = utils.to_tuple(func.input_type)
-        num_expected = len(input_type)
-        num_got = len(tiles)
-
-        if num_expected != num_got:
-            raise ValueError(f'Expected input count {num_expected}, got {num_got}.')
+        utils.check_data_count(tiles, input_type=input_type)
 
         profile = None
         for i, ts in enumerate(tiles):
