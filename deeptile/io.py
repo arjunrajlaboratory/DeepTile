@@ -19,6 +19,11 @@ def load(image, link_data=True):
     -------
         dt : DeepTile
             DeepTile object.
+
+    Raises
+    ------
+        ValueError
+            If ``image`` is invalid.
     """
 
     dt = None
@@ -31,7 +36,7 @@ def load(image, link_data=True):
         elif image.endswith('.nd2'):
             dt = from_nd2(image)
     else:
-        raise ValueError("Invalid image.")
+        raise ValueError("invalid image.")
 
     dt.link_data = link_data
 
