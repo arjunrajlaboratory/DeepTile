@@ -150,12 +150,14 @@ class DeepTile:
 
         unpack_input_singleton = isinstance(func_stitch.input_type, str)
         unpack_output_singleton = isinstance(func_stitch.output_type, str)
+        output_type = utils.to_tuple(func_stitch.output_type)
 
         if unpack_input_singleton:
             tiles = tiles[0]
 
         stitched = func_stitch(tiles=tiles)
-        stitched = Stitched(stitched, job, func_stitch.output_type)
+        stitched = utils.to_tuple(stitched)
+        stitched = [Stitched(s, job, otype) for s, otype in zip(stitched, output_type)]
 
         if unpack_output_singleton:
             stitched = stitched[0]
