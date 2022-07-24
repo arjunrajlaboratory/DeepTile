@@ -148,8 +148,19 @@ class DeepTile:
 
         job = Job(tiles, 'stitch', job_kwargs)
 
+        unpack_input_singleton = isinstance(func_stitch.input_type, str)
+        unpack_output_singleton = isinstance(func_stitch.output_type, str)
+
+        if unpack_input_singleton:
+            tiles = tiles[0]
+
         stitched = func_stitch(tiles=tiles)
         stitched = Stitched(stitched, job, func_stitch.output_type)
+
+        if unpack_output_singleton:
+            stitched = stitched[0]
+        else:
+            stitched = tuple(stitched)
 
         return stitched
 
