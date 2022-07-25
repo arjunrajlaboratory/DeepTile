@@ -178,18 +178,14 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
         t = tile[i_output]
         otype = output_type[i_output]
 
-        if (batch_axis is None) and (otype == 'tiled_image'):
-
-            ts[index] = t
-
-        else:
+        if batch_axis:
 
             current_tile = ts[index]
             new_tile = None
 
             if otype == 'tiled_image':
 
-                new_tile = np.expand_dims(t, batch_axis)
+                new_tile = t[None]
 
             elif otype == 'tiled_coords':
 
@@ -200,6 +196,10 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
                 ts[index] = np.concatenate((current_tile, new_tile), 0)
             else:
                 ts[index] = new_tile
+
+        else:
+
+            ts[index] = t
 
     return tiles
 

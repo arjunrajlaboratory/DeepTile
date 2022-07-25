@@ -24,7 +24,7 @@ class DeepTile:
         self.link_data = None
         self.profiles = []
 
-    def process(self, tiles, func_process, batch_axis=None, batch_size=None, pad_final_batch=False):
+    def process(self, tiles, func_process, batch_axis=False, batch_size=None, pad_final_batch=False):
 
         """ Process tiles using a transformed function.
 
@@ -34,8 +34,8 @@ class DeepTile:
                 Array of tiles.
             func_process : Algorithm
                 Processing function transformed into an Algorithm object.
-            batch_axis : int or None, optional, default None
-                Image axis used to create batches during processing. If ``None``, no batch axis will be used.
+            batch_axis : bool, optional, default False
+                Whether to use the first axis to create batches. If ``None``, no batch axis will be used.
             batch_size : int or None, optional, default None
                 Number of tiles in each batch. If ``None``, the default batching configuration will be determined by
                 ``func_process``. If ``func_process`` does not support batching, this value is ignored.
@@ -67,11 +67,10 @@ class DeepTile:
         output_type = utils.to_tuple(func_process.output_type)
         processed_tiles = [np.empty(profile.tiling, dtype=object) for _ in range(len(output_type))]
 
-        if batch_axis is not None:
-            batch_axis_len = nonempty_tiles[0][0].shape[batch_axis]
+        if batch_axis:
+            batch_axis_len = nonempty_tiles[0][0].shape[0]
             nonempty_indices = np.repeat(np.array(nonempty_indices), batch_axis_len, 0)
-            nonempty_tiles = [[subt for t in ts for subt in list(np.moveaxis(t, batch_axis, 0))]
-                              for ts in nonempty_tiles]
+            nonempty_tiles = [[subt for t in ts for subt in t] for ts in nonempty_tiles]
 
         if func_process.batching:
 
