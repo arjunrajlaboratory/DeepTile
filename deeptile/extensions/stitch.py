@@ -1,7 +1,7 @@
 import numpy as np
 
 from deeptile.core import utils
-from deeptile.core.algorithms import transform
+from deeptile.core.algorithms import partial, transform
 from skimage import measure
 
 
@@ -23,6 +23,7 @@ def stitch_tiles(blend=True, sigma=5):
             Algorithm object with a tile stitching algorithm as the callable.
     """
 
+    @partial(transform, output_type='stitched_image')
     def func_stitch(tiles):
 
         profile = tiles.profile
@@ -70,8 +71,6 @@ def stitch_tiles(blend=True, sigma=5):
 
         return stitched
 
-    func_stitch = transform(func_stitch, output_type='stitched_image')
-
     return func_stitch
 
 
@@ -90,6 +89,7 @@ def stitch_masks(iou_threshold=0.1):
             Algorithm object with a mask stitching algorithm as the callable.
     """
 
+    @partial(transform, output_type='stitched_image')
     def func_stitch(tiles):
 
         masks = tiles
@@ -163,8 +163,6 @@ def stitch_masks(iou_threshold=0.1):
 
         return stitched_mask
 
-    func_stitch = transform(func_stitch, output_type='stitched_image')
-
     return func_stitch
 
 
@@ -178,6 +176,7 @@ def stitch_coords():
             Algorithm object with a coordinate stitching algorithm as the callable.
     """
 
+    @partial(transform, input_type='tiled_coords', output_type='stitched_coords')
     def func_stitch(tiles):
 
         coords = tiles
@@ -222,8 +221,6 @@ def stitch_coords():
             stitched_coords = stitched_coords[0]
 
         return stitched_coords
-
-    func_stitch = transform(func_stitch, input_type='tiled_coords', output_type='stitched_coords')
 
     return func_stitch
 

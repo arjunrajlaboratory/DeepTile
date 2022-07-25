@@ -25,13 +25,12 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
     model = Cellpose(**model_parameters)
 
+    @transform
     def func_segment(tile):
 
         mask = model.eval(tile, tile=False, **eval_parameters)[0]
 
         return mask
-
-    func_segment = transform(func_segment)
 
     return func_segment
 
@@ -57,6 +56,7 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
     model = Mesmer(**model_parameters)
 
+    @transform
     def func_segment(tiles):
 
         tiles = np.moveaxis(tiles, 1, -1)
@@ -64,8 +64,6 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
         masks = np.moveaxis(masks, -1, 1)
 
         return masks
-
-    func_segment = transform(func_segment)
 
     return func_segment
 
@@ -91,14 +89,13 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
     model = NuclearSegmentation(**model_parameters)
 
+    @transform
     def func_segment(tiles):
 
         tiles = np.expand_dims(tiles, axis=-1)
         masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)[:, :, :, 0]
 
         return masks
-
-    func_segment = transform(func_segment)
 
     return func_segment
 
@@ -124,13 +121,12 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
     model = CytoplasmSegmentation(**model_parameters)
 
+    @transform
     def func_segment(tiles):
 
         tiles = np.expand_dims(tiles, axis=-1)
         masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)[:, :, :, 0]
 
         return masks
-
-    func_segment = transform(func_segment)
 
     return func_segment
