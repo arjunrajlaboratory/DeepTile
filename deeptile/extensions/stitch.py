@@ -180,20 +180,21 @@ def stitch_coords():
 
     def func_stitch(tiles):
 
-        if tiles.dtype is not np.dtype('O'):
-            batch_axis = False
-            coords = np.empty((1, ), dtype=object)
-            coords[0] = tiles
-        else:
-            batch_axis = True
-            coords = tiles
+        coords = tiles
 
         profile = coords.profile
         nonempty_indices = profile.nonempty_indices
         tile_indices_iterator = coords.tile_indices_iterator
         border_indices_iterator = coords.border_indices_iterator
         first_coord = coords[nonempty_indices[0]]
-        n_batches = first_coord.shape[0]
+
+        if coords.nonempty_tiles[0].dtype is np.dtype('O'):
+            batch_axis = True
+            n_batches = first_coord.shape[0]
+        else:
+            batch_axis = False
+            n_batches = 1
+
         stitched_coords = np.empty(n_batches, dtype=object)
 
         for n in range(n_batches):
@@ -205,7 +206,11 @@ def stitch_coords():
                 tile_index = tile_indices_iterator[index]
                 border_index = border_indices_iterator[index]
 
-                coord = coords[index][n]
+                if batch_axis:
+                    coord = coords[index][n]
+                else:
+                    coord = coords[index]
+
                 coord = coord + np.array([tile_index[0, 0], tile_index[1, 0]])
                 s = (border_index[0, 0] < coord[:, 0]) & (coord[:, 0] < border_index[0, 1]) & \
                     (border_index[1, 0] < coord[:, 1]) & (coord[:, 1] < border_index[1, 1])
