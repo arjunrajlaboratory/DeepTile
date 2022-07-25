@@ -95,7 +95,7 @@ def transform(func, input_type='tiled_image', output_type='tiled_image', default
 
     arg_names = signature(func).parameters.keys()
 
-    if ('tile' in arg_names) & ('tiles' in arg_names):
+    if ('tile' in arg_names) and ('tiles' in arg_names):
         raise ValueError('func has both tile and tiles arguments for the Tiled input.')
 
     algorithm_type = None

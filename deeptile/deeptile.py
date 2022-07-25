@@ -83,7 +83,7 @@ class DeepTile:
 
                 batch_indices = nonempty_indices[n * batch_size:(n + 1) * batch_size]
                 batch_tiles = [np.stack(ts[n * batch_size:(n + 1) * batch_size]) for ts in nonempty_tiles]
-                if pad_final_batch & (batch_tiles[0].shape[0] < batch_size):
+                if pad_final_batch and (batch_tiles[0].shape[0] < batch_size):
                     batch_tiles = [utils.array_pad(ts, batch_size - ts.shape[0], 0) for ts in batch_tiles]
                 batch_tiles = utils.compute_dask(batch_tiles)
                 if unpack_input_singleton:
