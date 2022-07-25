@@ -75,7 +75,7 @@ def parse(image, image_sizes, axes_order, overlap, slices):
         height = y_ndim * image.attributes.heightPx - (y_ndim - 1) * round(image.attributes.heightPx * overlap[0])
 
         image_shape = None
-        tiles = np.empty(shape=(y_ndim, x_ndim), dtype=object)
+        tiles = np.empty((y_ndim, x_ndim), dtype=object)
 
         for n in range(image_sizes['P']):
 

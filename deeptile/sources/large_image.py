@@ -12,7 +12,7 @@ def parse(image, image_shape, tile_size, overlap, slices):
     tile_size = np.ceil(tile_size)
     overlap_size = np.floor(overlap_size)
 
-    tiles = np.empty(shape=tiling, dtype=object)
+    tiles = np.empty(tiling, dtype=object)
     gys = []
     gxs = []
     heights = []

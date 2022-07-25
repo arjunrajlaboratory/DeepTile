@@ -102,7 +102,7 @@ def array_pad(ary, padding, axis=0):
 
 def cast_list_to_array(lst):
 
-    ary = np.empty(shape=(len(lst), len(lst[0])), dtype=object)
+    ary = np.empty((len(lst), len(lst[0])), dtype=object)
 
     for i, sublst in enumerate(lst):
         for j, subary in enumerate(sublst):
@@ -189,7 +189,7 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
 
             elif otype == 'tiled_coords':
 
-                new_tile = np.empty((1, ), dtype=object)
+                new_tile = np.empty(1, dtype=object)
                 new_tile[0] = t
 
             if isinstance(current_tile, np.ndarray):
