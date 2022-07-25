@@ -180,7 +180,13 @@ def stitch_coords():
 
     def func_stitch(tiles):
 
-        coords = tiles
+        if tiles.dtype is not np.dtype('O'):
+            batch_axis = False
+            coords = np.empty((1, ), dtype=object)
+            coords[0] = tiles
+        else:
+            batch_axis = True
+            coords = tiles
 
         profile = coords.profile
         nonempty_indices = profile.nonempty_indices
@@ -206,6 +212,9 @@ def stitch_coords():
                 batch_coords.append(coord[s])
 
             stitched_coords[n] = np.concatenate(batch_coords, axis=0)
+
+        if not batch_axis:
+            stitched_coords = stitched_coords[0]
 
         return stitched_coords
 

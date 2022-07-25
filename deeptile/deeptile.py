@@ -57,14 +57,14 @@ class DeepTile:
         self._check_compatibility(tiles, func_process, 'process')
 
         job = Job(tiles, 'process', job_kwargs)
-
         profile = job.profile
-        nonempty_indices = profile.nonempty_indices
-        nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
 
         unpack_input_singleton = isinstance(func_process.input_type, str)
         unpack_output_singleton = isinstance(func_process.output_type, str)
         output_type = utils.to_tuple(func_process.output_type)
+
+        nonempty_indices = profile.nonempty_indices
+        nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
         processed_tiles = [np.empty(profile.tiling, dtype=object) for _ in range(len(output_type))]
 
         if batch_axis:
