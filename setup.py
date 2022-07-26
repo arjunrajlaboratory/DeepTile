@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "1.6.0"
+VERSION = "1.6.1"
 DESCRIPTION = "DeepTile"
 LONG_DESCRIPTION = "Large image tiling and stitching algorithm for deep learning libraries."
 
@@ -13,7 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
     packages=find_packages(),
-    install_requires=['dask', 'dask-image', 'nd2', 'numpy', 'scikit-image', 'tifffile'],
+    install_requires=['dask', 'nd2', 'numpy', 'scikit-image', 'tifffile'],
     keywords=["segmentation", "stitching"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

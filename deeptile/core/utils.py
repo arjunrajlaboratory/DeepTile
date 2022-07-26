@@ -1,6 +1,5 @@
 import numpy as np
 from collections.abc import Sequence
-from dask.array import Array
 
 
 def to_tuple(obj):
@@ -159,15 +158,6 @@ def check_data_count(data, input_type=None, output_type=None):
 
     if num_expected != num_got:
         raise ValueError(f'expected {count_desc} count {num_expected}, got {num_got}.')
-
-
-def compute_dask(tiles):
-
-    for i, ts in enumerate(tiles):
-        if isinstance(ts, Array):
-            tiles[i] = ts.compute()
-
-    return tiles
 
 
 def update_tiles(tiles, index, tile, batch_axis, output_type):

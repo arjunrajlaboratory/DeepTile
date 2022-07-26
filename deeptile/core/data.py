@@ -1,4 +1,5 @@
 import numpy as np
+from dask.array import Array
 from deeptile.core import utils
 from deeptile.core.algorithms import partial, transform
 from deeptile.core.iterators import IndicesIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
@@ -53,7 +54,7 @@ class Data(np.ndarray):
 
         return data
 
-    def __array_finalize__(self, data, *args, **kwargs):
+    def __array_finalize__(self, data):
 
         if data is None:
             return
@@ -90,6 +91,27 @@ class Tiled(Data):
         tiles = super().__new__(cls, tiles, job, otype, ALLOWED_TILED_TYPES)
         tiles.parent = tiles
         tiles.slices = []
+
+        return tiles
+
+    def compute(self):
+
+        """ Compute Dask arrays.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        tiles = self
+
+        if isinstance(self[self.profile.nonempty_indices[0]], Array):
+
+            tiles = self.dt.process(self, transform(lambda tile: tile.compute(),
+                                                    input_type=self.otype, output_type=self.otype))
+            tiles.job.type = 'compute_dask'
+            tiles.job.kwargs = {}
 
         return tiles
 
