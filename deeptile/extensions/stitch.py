@@ -142,11 +142,12 @@ def stitch_masks(iou_threshold=0.1):
                 mask = mask.reshape(-1, *mask.shape[-2:])
                 mask = mask[z]
                 regions = measure.regionprops(mask)
+                regions = {region.label: region for region in regions}
 
                 for blob in blobs:
 
-                    mask_crop = regions[blob - 1].image
-                    s = regions[blob - 1].slice
+                    mask_crop = regions[blob].image
+                    s = regions[blob].slice
                     s_image = (slice(s[0].start + tile_index[0, 0],
                                      s[0].stop + tile_index[0, 0]),
                                slice(s[1].start + tile_index[1, 0],
