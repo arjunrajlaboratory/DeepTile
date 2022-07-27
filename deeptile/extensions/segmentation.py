@@ -60,7 +60,7 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
     def func_segment(tiles):
 
         tiles = np.moveaxis(tiles, 1, -1)
-        masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)
+        masks = model.predict(tiles, **eval_parameters)
         masks = np.moveaxis(masks, -1, 1)
 
         return masks
@@ -93,7 +93,7 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
     def func_segment(tiles):
 
         tiles = np.expand_dims(tiles, axis=-1)
-        masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)[:, :, :, 0]
+        masks = model.predict(tiles, **eval_parameters)[:, :, :, 0]
 
         return masks
 
@@ -125,7 +125,7 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
     def func_segment(tiles):
 
         tiles = np.expand_dims(tiles, axis=-1)
-        masks = model.predict(tiles, batch_size=tiles.shape[0], **eval_parameters)[:, :, :, 0]
+        masks = model.predict(tiles, **eval_parameters)[:, :, :, 0]
 
         return masks
 
