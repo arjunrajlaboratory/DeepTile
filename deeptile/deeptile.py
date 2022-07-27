@@ -56,13 +56,11 @@ class DeepTile:
         tiles = utils.to_tuple(tiles)
         self._check_compatibility(tiles, func_process, 'process')
 
-        job = Job(tiles, 'process', job_kwargs)
-        profile = job.profile
-
         unpack_input_singleton = isinstance(func_process.input_type, str)
         unpack_output_singleton = isinstance(func_process.output_type, str)
         output_type = utils.to_tuple(func_process.output_type)
 
+        profile = tiles[0].profile
         nonempty_indices = profile.nonempty_indices
         nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
         processed_tiles = [np.empty(profile.tiling, dtype=object) for _ in range(len(output_type))]
@@ -112,6 +110,7 @@ class DeepTile:
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                      output_type)
 
+        job = Job(tiles, 'process', job_kwargs)
         processed_tiles = [Tiled(ts, job, otype) for ts, otype in zip(processed_tiles, output_type)]
 
         if unpack_output_singleton:
@@ -145,8 +144,6 @@ class DeepTile:
         tiles = utils.to_tuple(tiles)
         self._check_compatibility(tiles, func_stitch, 'stitch')
 
-        job = Job(tiles, 'stitch', job_kwargs)
-
         unpack_input_singleton = isinstance(func_stitch.input_type, str)
         unpack_output_singleton = isinstance(func_stitch.output_type, str)
         output_type = utils.to_tuple(func_stitch.output_type)
@@ -157,6 +154,8 @@ class DeepTile:
         stitched = func_stitch(tiles=tiles)
         stitched = utils.to_tuple(stitched)
         utils.check_data_count(stitched, output_type=output_type)
+
+        job = Job(tiles, 'stitch', job_kwargs)
         stitched = [Stitched(s, job, otype) for s, otype in zip(stitched, output_type)]
 
         if unpack_output_singleton:
