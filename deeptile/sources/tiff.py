@@ -1,12 +1,15 @@
 import dask.array as da
+import tifffile
 from dask import delayed
-from tifffile import memmap
 
 
-def read(image):
+def read(image, dask):
 
-    delayed_reader = delayed(memmap)(image)
-    image = memmap(image)
-    image = da.from_delayed(delayed_reader, shape=image.shape, dtype=image.dtype)
+    if dask:
+        delayed_reader = delayed(tifffile.memmap)(image)
+        image = tifffile.memmap(image)
+        image = da.from_delayed(delayed_reader, shape=image.shape, dtype=image.dtype)
+    else:
+        image = tifffile.imread(image)
 
     return image

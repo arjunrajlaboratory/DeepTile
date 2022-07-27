@@ -2,27 +2,31 @@ import nd2
 import numpy as np
 from collections import OrderedDict
 
-AXES_ORDER = ('P', 'T', 'Z', 'C', 'S', 'Y', 'X')
+AXIS_ORDER = ('P', 'T', 'Z', 'C', 'S', 'Y', 'X')
 
 
 def read(image):
 
     image = nd2.ND2File(image)
-    raw_image_sizes = image.sizes
-    axes_order = tuple(axis for axis in AXES_ORDER if axis in raw_image_sizes.keys())
-    image_sizes = OrderedDict((axis, raw_image_sizes[axis]) for axis in axes_order)
+    raw_axis_sizes = image.sizes
+    axis_order = tuple(axis for axis in AXIS_ORDER if axis in raw_axis_sizes.keys())
+    axis_sizes = OrderedDict((axis, raw_axis_sizes[axis]) for axis in axis_order)
 
-    return image, image_sizes, axes_order
+    return image, axis_sizes, axis_order
 
 
-def parse(image, image_sizes, axes_order, overlap, slices):
+def parse(image, dask, axis_sizes, axis_order, overlap, slices):
 
-    image_array = image.to_dask()
-    raw_axes_order = image.sizes.keys()
+    if dask:
+        image_array = image.to_dask()
+    else:
+        image_array = image.asarray()
+
+    raw_axis_order = image.sizes.keys()
     image_array = np.moveaxis(image_array,
-                              range(len(raw_axes_order)), (axes_order.index(axis) for axis in raw_axes_order))
+                              range(len(raw_axis_order)), (axis_order.index(axis) for axis in raw_axis_order))
 
-    if 'P' not in axes_order:
+    if 'P' not in axis_order:
 
         tiles = np.empty((1, 1), dtype=object)
         tiles[0, 0] = image_array[slices]
@@ -77,7 +81,7 @@ def parse(image, image_sizes, axes_order, overlap, slices):
         image_shape = None
         tiles = np.empty((y_ndim, x_ndim), dtype=object)
 
-        for n in range(image_sizes['P']):
+        for n in range(axis_sizes['P']):
 
             tile = image_array[n]
             if tile.ndim > 2:

@@ -1,8 +1,9 @@
 import dask.array as da
 
 
-def read(image):
+def read(image, dask):
 
-    image = da.from_array(image)
+    if dask:
+        image = da.from_array(image)
 
     return image
