@@ -1,11 +1,20 @@
 import numpy as np
 from collections.abc import Sequence
+from dask.array import Array
 
 
 def to_tuple(obj):
 
     if isinstance(obj, str) or (not isinstance(obj, Sequence)):
         obj = (obj, )
+
+    return obj
+
+
+def compute_dask(obj):
+
+    if isinstance(obj, Array):
+        obj = obj.compute()
 
     return obj
 

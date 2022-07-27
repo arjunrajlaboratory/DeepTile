@@ -26,6 +26,8 @@ def stitch_tiles(blend=True, sigma=5):
     @partial(transform, output_type='stitched_image')
     def func_stitch(tiles):
 
+        tiles = tiles.compute()
+
         profile = tiles.profile
         nonempty_indices = profile.nonempty_indices
         first_tile = tiles[nonempty_indices[0]]
@@ -92,7 +94,7 @@ def stitch_masks(iou_threshold=0.1):
     @partial(transform, output_type='stitched_image')
     def func_stitch(tiles):
 
-        masks = tiles
+        masks = tiles.compute()
 
         masks = utils.unpad_tiles(masks)
 
@@ -180,7 +182,7 @@ def stitch_coords():
     @partial(transform, input_type='tiled_coords', output_type='stitched_coords')
     def func_stitch(tiles):
 
-        coords = tiles
+        coords = tiles.compute()
 
         profile = coords.profile
         nonempty_indices = profile.nonempty_indices

@@ -1,4 +1,5 @@
 import numpy as np
+from deeptile.core.utils import compute_dask
 from deeptile.core.algorithms import transform
 
 
@@ -28,6 +29,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
     @transform
     def func_segment(tile):
 
+        tile = compute_dask(tile)
         mask = model.eval(tile, tile=False, **eval_parameters)[0]
 
         return mask
@@ -59,6 +61,7 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
     @transform
     def func_segment(tiles):
 
+        tiles = compute_dask(tiles)
         tiles = np.moveaxis(tiles, 1, -1)
         masks = model.predict(tiles, **eval_parameters)
         masks = np.moveaxis(masks, -1, 1)
@@ -92,6 +95,7 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
     @transform
     def func_segment(tiles):
 
+        tiles = compute_dask(tiles)
         tiles = np.expand_dims(tiles, axis=-1)
         masks = model.predict(tiles, **eval_parameters)[:, :, :, 0]
 
@@ -124,6 +128,7 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
     @transform
     def func_segment(tiles):
 
+        tiles = compute_dask(tiles)
         tiles = np.expand_dims(tiles, axis=-1)
         masks = model.predict(tiles, **eval_parameters)[:, :, :, 0]
 
