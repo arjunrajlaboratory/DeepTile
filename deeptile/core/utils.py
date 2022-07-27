@@ -145,21 +145,6 @@ def unpad_tiles(tiles):
     return tiles
 
 
-def check_data_count(data, input_type=None, output_type=None):
-
-    if input_type is not None:
-        count_desc = 'input'
-        num_expected = len(input_type)
-    else:
-        count_desc = 'output'
-        num_expected = len(output_type)
-
-    num_got = len(data)
-
-    if num_expected != num_got:
-        raise ValueError(f'expected {count_desc} count {num_expected}, got {num_got}.')
-
-
 def update_tiles(tiles, index, tile, batch_axis, output_type):
 
     for i_output in range(len(tiles)):

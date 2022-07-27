@@ -88,11 +88,11 @@ class DeepTile:
 
                 processed_batch_tiles = func_process(tiles=batch_tiles)
                 processed_batch_tiles = utils.to_tuple(processed_batch_tiles)
+                self._check_data_count(processed_batch_tiles, output_type=output_type)
 
                 for i_batch, index in enumerate(batch_indices):
 
                     processed_tile = tuple(ts[i_batch] for ts in processed_batch_tiles)
-                    utils.check_data_count(processed_tile, output_type=output_type)
                     processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                          output_type)
 
@@ -106,7 +106,7 @@ class DeepTile:
 
                 processed_tile = func_process(tile=tile)
                 processed_tile = utils.to_tuple(processed_tile)
-                utils.check_data_count(processed_tile, output_type=output_type)
+                self._check_data_count(processed_tile, output_type=output_type)
                 processed_tiles = utils.update_tiles(processed_tiles, tuple(index), processed_tile, batch_axis,
                                                      output_type)
 
@@ -153,7 +153,7 @@ class DeepTile:
 
         stitched = func_stitch(tiles=tiles)
         stitched = utils.to_tuple(stitched)
-        utils.check_data_count(stitched, output_type=output_type)
+        self._check_data_count(stitched, output_type=output_type)
 
         job = Job(tiles, 'stitch', job_kwargs)
         stitched = [Stitched(s, job, otype) for s, otype in zip(stitched, output_type)]
@@ -199,7 +199,7 @@ class DeepTile:
             raise TypeError(f"func_{job_type} has the incorrect algorithm type of {func.algorithm_type}.")
 
         input_type = utils.to_tuple(func.input_type)
-        utils.check_data_count(tiles, input_type=input_type)
+        self._check_data_count(tiles, input_type=input_type)
 
         profile = None
         for i, ts in enumerate(tiles):
@@ -213,6 +213,38 @@ class DeepTile:
             else:
                 if ts.profile is not profile:
                     raise ValueError(f'tiles must all share a common profile.')
+
+    @staticmethod
+    def _check_data_count(data, input_type=None, output_type=None):
+
+        """ (For internal use) Check if the given data have the expected input or output count.
+
+        Parameters
+        ----------
+            data : Tiled or tuple of Tiled
+                Array of tiles.
+            input_type : str or tuple of str
+                Object type of algorithm input.
+            output_type : str or tuple of str
+                Object type of algorithm output.
+
+        Raises
+        ------
+            ValueError
+                If ``data`` do not have the expected input or output count.
+        """
+
+        if input_type is not None:
+            count_desc = 'input'
+            num_expected = len(input_type)
+        else:
+            count_desc = 'output'
+            num_expected = len(output_type)
+    
+        num_got = len(data)
+    
+        if num_expected != num_got:
+            raise ValueError(f'expected {count_desc} count {num_expected}, got {num_got}.')
 
 
 class DeepTileArray(DeepTile):
