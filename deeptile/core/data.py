@@ -94,7 +94,7 @@ class Tiled(Data):
 
         return tiles
 
-    def compute(self):
+    def compute(self, **kwargs):
 
         """ Compute Dask arrays.
 
@@ -108,10 +108,31 @@ class Tiled(Data):
 
         if isinstance(self[self.profile.nonempty_indices[0]], Array):
 
-            tiles = self.dt.process(self, transform(lambda tile: tile.compute(),
+            tiles = self.dt.process(self, transform(lambda tile: tile.compute(**kwargs),
                                                     input_type=self.otype, output_type=self.otype))
             tiles.job.type = 'compute_dask'
-            tiles.job.kwargs = {}
+            tiles.job.kwargs = kwargs
+
+        return tiles
+
+    def persist(self, **kwargs):
+
+        """ Persist Dask arrays into memory.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        tiles = self
+
+        if isinstance(self[self.profile.nonempty_indices[0]], Array):
+
+            tiles = self.dt.process(self, transform(lambda tile: tile.persist(**kwargs),
+                                                    input_type=self.otype, output_type=self.otype))
+            tiles.job.type = 'persist_dask'
+            tiles.job.kwargs = kwargs
 
         return tiles
 
