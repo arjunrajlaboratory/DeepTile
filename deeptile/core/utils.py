@@ -192,8 +192,20 @@ def tile_coords(coords, tile):
 
     tile_index = tile
 
-    s = (tile_index[0, 0] < coords[:, 0]) & (coords[:, 0] < tile_index[0, 1]) & \
-        (tile_index[1, 0] < coords[:, 1]) & (coords[:, 1] < tile_index[1, 1])
-    coords = coords[s] - tile_index[:, 0]
+    if isinstance(coords, Sequence) or (coords.dtype is np.dtype('O')):
+        n_batches = len(coords)
+    else:
+        coords = (coords,)
+        n_batches = 1
 
-    return coords
+    tiled_coords = np.empty(n_batches, dtype=object)
+
+    for n in range(n_batches):
+
+        coord = coords[n]
+
+        s = (tile_index[0, 0] < coord[:, 0]) & (coord[:, 0] < tile_index[0, 1]) & \
+            (tile_index[1, 0] < coord[:, 1]) & (coord[:, 1] < tile_index[1, 1])
+        tiled_coords[n] = coord[s] - tile_index[:, 0]
+
+    return tiled_coords
