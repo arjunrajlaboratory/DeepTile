@@ -36,7 +36,7 @@ class DeepTile:
             func_process : Algorithm
                 Processing function transformed into an Algorithm object.
             batch_axis : bool, optional, default False
-                Whether to use the first axis to create batches. If ``None``, no batch axis will be used.
+                Whether to use the first axis to create batches.
             batch_size : int or None, optional, default None
                 Number of tiles in each batch. If ``None``, the default batching configuration will be determined by
                 ``func_process``. If ``func_process`` does not support batching, this value is ignored.

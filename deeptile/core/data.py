@@ -94,7 +94,7 @@ class Tiled(Data):
 
         return tiles
 
-    def compute(self, **kwargs):
+    def compute(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
 
         """ Compute Dask arrays.
 
@@ -102,6 +102,12 @@ class Tiled(Data):
         -------
             tiles : Tiled
                 Array of tiles.
+            batch_axis : bool, optional, default False
+                Whether to use the first axis to create batches.
+            batch_size : int or None, optional, default None
+                Number of tiles in each batch.
+            pad_final_batch : bool, optional, default False
+                Whether to pad the final batch to the specified ``batch_size``.
         """
 
         tiles = self
@@ -109,13 +115,14 @@ class Tiled(Data):
         if isinstance(self[self.profile.nonempty_indices[0]], Array):
 
             tiles = self.dt.process(self, transform(lambda tile: tile.compute(**kwargs),
-                                                    input_type=self.otype, output_type=self.otype))
+                                                    input_type=self.otype, output_type=self.otype),
+                                    batch_axis=batch_axis, batch_size=batch_size, pad_final_batch=pad_final_batch)
             tiles.job.type = 'compute_dask'
             tiles.job.kwargs = kwargs
 
         return tiles
 
-    def persist(self, **kwargs):
+    def persist(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
 
         """ Persist Dask arrays into memory.
 
@@ -123,6 +130,12 @@ class Tiled(Data):
         -------
             tiles : Tiled
                 Array of tiles.
+            batch_axis : bool, optional, default False
+                Whether to use the first axis to create batches.
+            batch_size : int or None, optional, default None
+                Number of tiles in each batch.
+            pad_final_batch : bool, optional, default False
+                Whether to pad the final batch to the specified ``batch_size``.
         """
 
         tiles = self
@@ -130,7 +143,8 @@ class Tiled(Data):
         if isinstance(self[self.profile.nonempty_indices[0]], Array):
 
             tiles = self.dt.process(self, transform(lambda tile: tile.persist(**kwargs),
-                                                    input_type=self.otype, output_type=self.otype))
+                                                    input_type=self.otype, output_type=self.otype),
+                                    batch_axis=batch_axis, batch_size=batch_size, pad_final_batch=pad_final_batch)
             tiles.job.type = 'persist_dask'
             tiles.job.kwargs = kwargs
 
