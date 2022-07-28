@@ -1,13 +1,19 @@
 import numpy as _np
 from deeptile.numpy._lift import _lift
 
-_funcs = (_np.reshape, _np.ravel,
-          _np.moveaxis, _np.rollaxis, _np.swapaxes, _np.transpose,
-          _np.broadcast_to, _np.broadcast_arrays, _np.expand_dims, _np.squeeze,
-          _np.concatenate, _np.stack, _np.block, _np.vstack, _np.hstack, _np.dstack, _np.column_stack, _np.row_stack,
-          _np.tile, _np.repeat,
-          _np.delete, _np.insert, _np.append, _np.resize,
-          _np.flip, _np.fliplr, _np.flipud, _np.roll, _np.rot90)
+_ufuncs = _np.core.umath.__all__
+_funcs = ('empty_like', 'ones_like', 'zeros_like', 'full_like',
+          'packbits', 'unpackbits',
+          'reshape', 'ravel',
+          'moveaxis', 'rollaxis', 'swapaxes', 'transpose',
+          'broadcast_to', 'broadcast_arrays', 'expand_dims', 'squeeze',
+          'concatenate', 'stack', 'block', 'vstack', 'hstack', 'dstack', 'column_stack', 'row_stack',
+          'tile', 'repeat',
+          'delete', 'insert', 'append', 'resize',
+          'flip', 'fliplr', 'flipud', 'roll', 'rot90')
+
+for _ufunc in _ufuncs:
+    globals()[_ufunc] = getattr(_np, _ufunc)
 
 for _func in _funcs:
-    globals()[_func.__name__] = _lift(_func)
+    globals()[_func] = _lift(getattr(_np, _func))
