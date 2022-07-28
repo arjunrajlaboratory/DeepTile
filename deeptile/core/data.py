@@ -142,19 +142,20 @@ class Tiled(Data):
 
         """ Compute Dask arrays.
 
-        Returns
-        -------
-            tiles : Tiled
-                Array of tiles.
+        Parameters
+        ----------
             batch_axis : bool, optional, default False
                 Whether to use the first axis to create batches.
             batch_size : int or None, optional, default None
                 Number of tiles in each batch.
             pad_final_batch : bool, optional, default False
                 Whether to pad the final batch to the specified ``batch_size``.
-        """
 
-        tiles = self
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
 
         if isinstance(self[self.profile.nonempty_indices[0]], Array):
 
@@ -164,25 +165,30 @@ class Tiled(Data):
             tiles.job.type = 'compute_dask'
             tiles.job.kwargs = kwargs
 
+        else:
+
+            tiles = self
+
         return tiles
 
     def persist(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
 
         """ Persist Dask arrays into memory.
 
-        Returns
-        -------
-            tiles : Tiled
-                Array of tiles.
+        Parameters
+        ----------
             batch_axis : bool, optional, default False
                 Whether to use the first axis to create batches.
             batch_size : int or None, optional, default None
                 Number of tiles in each batch.
             pad_final_batch : bool, optional, default False
                 Whether to pad the final batch to the specified ``batch_size``.
-        """
 
-        tiles = self
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
 
         if isinstance(self[self.profile.nonempty_indices[0]], Array):
 
@@ -191,6 +197,10 @@ class Tiled(Data):
                                     batch_axis=batch_axis, batch_size=batch_size, pad_final_batch=pad_final_batch)
             tiles.job.type = 'persist_dask'
             tiles.job.kwargs = kwargs
+
+        else:
+
+            tiles = self
 
         return tiles
 
