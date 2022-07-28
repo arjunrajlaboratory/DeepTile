@@ -94,6 +94,50 @@ class Tiled(Data):
 
         return tiles
 
+    def __array_ufunc__(self, ufunc, method, *inputs, **_kwargs):
+
+        """ Process tiles using a universal function.
+
+        Parameters
+        ----------
+            ufunc : numpy.ufunc
+                The ufunc object that was called.
+            methods : str
+                String indicating how the ``ufunc`` was called, either ``"__call__"`` to indicate it was called
+                directly, or one of its methods: ``"reduce"``, ``"accumulate"``, ``"reduceat"``, ``"outer"``, or
+                ``"at"``.
+            inputs : tuple
+                Tuple of the input arguments to the ``ufunc``.
+            **kwargs : dict
+                Contains any optional or keyword arguments passed to the function. This includes any ``out`` arguments,
+                which are always contained in a tuple.
+
+        Returns
+        -------
+            processed_tiles : Tiled
+                Array of tiles after processing with ``ufunc``.
+        """
+
+        other_inputs = [i for i in inputs if i is not self]
+        input_type = self.otype
+        output_type = input_type
+
+        transformed_func = transform(lambda tiles, *args, **kwargs:
+                                     tiles.__array_ufunc__(ufunc, method, *(other_inputs + [tiles]), **_kwargs),
+                                     input_type=input_type, output_type=output_type)
+
+        dt = self.dt
+        processed_tiles = dt.process(self, transformed_func, batch_size=len(self.nonempty_tiles))
+        processed_tiles.job.type = 'array_ufunc'
+        processed_tiles.job.kwargs = {
+            'ufunc': ufunc,
+            'method': method,
+            'inputs': inputs,
+            'kwargs': _kwargs
+        }
+
+        return processed_tiles
+
     def compute(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
 
         """ Compute Dask arrays.
