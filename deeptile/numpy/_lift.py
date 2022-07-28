@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from deeptile.core.algorithms import transform, partial
+from deeptile.core.algorithms import transform
 from functools import wraps
 from inspect import signature
 
@@ -19,47 +19,64 @@ def _lift(func):
             Lifted NumPy function.
     """
 
-    parameters = signature(func.__closure__[0].cell_contents).parameters
+    closure = getattr(func, '__closure__', None)
+    if closure is None:
+        parameters = signature(func).parameters
+    else:
+        parameters = signature(func.__closure__[0].cell_contents).parameters
     arg_names = list(parameters.keys())
 
     if parameters[arg_names.pop(0)].kind.name == 'VAR_POSITIONAL':
 
         @wraps(func)
-        def lifted_func(*_tile, **_kwargs):
+        def lifted_func(*tiles, **kwargs):
 
-            input_type = tuple(t.otype for t in _tile)
+            input_type = tuple(t.otype for t in tiles)
             if len(set(input_type)) > 1:
                 raise ValueError("tile contains multiple object types.")
 
-            transformed_func = transform(lambda tile, **kwargs: func(*tile, **kwargs),
+            transformed_func = transform(lambda tile: func(*tile, **kwargs),
                                          input_type=input_type, output_type=input_type)
 
-            dt = _tile[0].dt
-            _tile = dt.process(_tile, partial(transformed_func, **_kwargs))
+            dt = tiles[0].dt
+            processed_tiles = dt.process(tiles, transformed_func)
+            job = processed_tiles[0].job
+            job.type = 'array_func'
+            job.kwargs = {
+                'func': func,
+                'tiles': tiles,
+                'kwargs': kwargs
+            }
 
-            return _tile
+            return processed_tiles
 
     else:
 
         @wraps(func)
-        def lifted_func(_tile, *_args, **_kwargs):
+        def lifted_func(tiles, *args, **kwargs):
 
-            if isinstance(_tile, Sequence):
-                input_type = tuple(t.otype for t in _tile)
+            if isinstance(tiles, Sequence):
+                input_type = tuple(t.otype for t in tiles)
                 if len(set(input_type)) > 1:
                     raise ValueError("tile contains multiple object types.")
                 output_type = input_type[0]
             else:
-                input_type = _tile.otype
+                input_type = tiles.otype
                 output_type = input_type
 
-            transformed_func = transform(lambda tile, *args, **kwargs: func(tile, *args, **kwargs),
+            transformed_func = transform(lambda tile: func(tile, *args, **kwargs),
                                          input_type=input_type, output_type=output_type)
-            _kwargs.update({arg_name: _arg for _arg, arg_name in zip(_args, arg_names)})
 
-            dt = _tile[0].dt
-            _tile = dt.process(_tile, partial(transformed_func, **_kwargs))
+            dt = tiles[0].dt
+            processed_tiles = dt.process(tiles, transformed_func)
+            processed_tiles.job.type = 'array_func'
+            processed_tiles.job.kwargs = {
+                'func': func,
+                'tiles': tiles,
+                'args': args,
+                'kwargs': kwargs
+            }
 
-            return _tile
+            return processed_tiles
 
     return lifted_func
