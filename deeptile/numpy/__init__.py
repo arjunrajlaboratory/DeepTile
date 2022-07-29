@@ -1,5 +1,5 @@
 import numpy as _np
-from deeptile.numpy._lift import _lift
+from deeptile.core.algorithms import lift as _lift
 
 _ufuncs = _np.core.umath.__all__
 _funcs = ('empty_like', 'ones_like', 'zeros_like', 'full_like',
