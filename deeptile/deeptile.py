@@ -190,6 +190,8 @@ class DeepTile:
                 If ``tiles`` are not associated with this DeepTile object.
             ValueError
                 If ``tiles`` do not all share a common profile.
+            ValueError
+                If ``tiles`` do not all share a common mask.
         """
 
         if not issubclass(type(func), AlgorithmBase):
@@ -202,6 +204,7 @@ class DeepTile:
         self._check_data_count(tiles, input_type=input_type)
 
         profile = None
+        mask = None
         for i, ts in enumerate(tiles):
             if ts.otype != input_type[i]:
                 raise ValueError(f"tile object type does not match the expected function input object type.")
@@ -213,6 +216,11 @@ class DeepTile:
             else:
                 if ts.profile is not profile:
                     raise ValueError(f'tiles must all share a common profile.')
+            if mask is None:
+                mask = ts.mask
+            else:
+                if np.any(ts.mask != mask):
+                    raise ValueError(f'tiles must all share a common mask.')
 
     @staticmethod
     def _check_data_count(data, input_type=None, output_type=None):
