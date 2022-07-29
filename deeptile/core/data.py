@@ -340,7 +340,7 @@ class Tiled(Data):
 
         nonempty_mask = self.mask * self.profile.nonempty_mask
         if not np.any(nonempty_mask):
-            raise ValueError("No nonempty tiles to process.")
+            raise ValueError("no nonempty tiles to process.")
 
         return nonempty_mask
 

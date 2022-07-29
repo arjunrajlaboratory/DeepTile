@@ -33,7 +33,7 @@ def _lift(func):
 
             input_type = tuple(t.otype for t in tiles)
             if len(set(input_type)) > 1:
-                raise ValueError("tile contains multiple object types.")
+                raise ValueError("tiles contain multiple object types.")
 
             transformed_func = transform(lambda tile: func(*tile, **kwargs),
                                          input_type=input_type, output_type=input_type)
@@ -58,7 +58,7 @@ def _lift(func):
             if isinstance(tiles, Sequence):
                 input_type = tuple(t.otype for t in tiles)
                 if len(set(input_type)) > 1:
-                    raise ValueError("tile contains multiple object types.")
+                    raise ValueError("tiles contain multiple object types.")
                 output_type = input_type[0]
             else:
                 input_type = tiles.otype
