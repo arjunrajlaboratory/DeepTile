@@ -1,4 +1,5 @@
 import numpy as np
+from collections.abc import Sequence
 from dask.array import Array
 from deeptile.core import utils
 from deeptile.core.algorithms import partial, transform
@@ -111,9 +112,9 @@ class Tiled(Data):
         self.slices = getattr(tiles, 'slices', None)
         self.mask = getattr(tiles, 'mask', None)
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **_kwargs):
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
 
-        """ Process tiles using a universal function.
+        """ Process tiles using a NumPy universal function.
 
         Parameters
         ----------
@@ -135,23 +136,145 @@ class Tiled(Data):
                 Array of tiles after processing with ``ufunc``.
         """
 
-        other_inputs = [i for i in inputs if i is not self]
-        input_type = self.otype
-        output_type = input_type
+        new_inputs = list(inputs)
+        input_indices = [i for i, inp in enumerate(inputs) if isinstance(inp, Tiled)]
 
-        transformed_func = transform(lambda tiles, *args, **kwargs:
-                                     tiles.__array_ufunc__(ufunc, method, *(other_inputs + [tiles]), **_kwargs),
-                                     input_type=input_type, output_type=output_type)
+        @partial(transform, input_type=(self.otype, 'index_iterator'), output_type=self.otype)
+        def transformed_func(tile):
+
+            tile, tile_index = tile
+
+            for arg_index in input_indices:
+                new_inputs[arg_index] = inputs[arg_index][tile_index]
+
+            processed_tile = tile.__array_ufunc__(ufunc, method, *new_inputs, **kwargs)
+
+            return processed_tile
 
         dt = self.dt
-        processed_tiles = dt.process(self, transformed_func, batch_size=len(self.nonempty_tiles))
+        processed_tiles = dt.process((self, self.index_iterator), transformed_func, batch_size=len(self.nonempty_tiles))
         processed_tiles.job.type = 'array_ufunc'
         processed_tiles.job.kwargs = {
             'ufunc': ufunc,
             'method': method,
-            'inputs': inputs,
-            'kwargs': _kwargs
+            'kwargs': kwargs
         }
+        if self.dt.link_data:
+            processed_tiles.job.input = inputs
+
+        return processed_tiles
+
+    def __array_function__(self, func, types, args, kwargs):
+
+        """ Process tiles using an arbitrary NumPy function.
+
+        Parameters
+        ----------
+            func : Callable
+                Arbitrary callable exposed by NumPy’s public API, which was called in the form func(*args, **kwargs).
+            types : tuple
+                types is a collection collections.abc.Collection of unique argument types from the original NumPy
+                function call that implement __array_function__.
+            args : tuple
+                Tuple of arguments directly passed on from the original call.
+            kwargs : dict
+                Dictionary of keyword arguments directly passed on from the original call.
+
+        Returns
+        -------
+            processed_tiles : Tiled
+                Array of tiles after processing with ``func``.
+        """
+
+        new_args = list(args)
+        new_kwargs = kwargs.copy()
+        arg_indices = []
+        kwarg_indices = []
+        inputs = []
+        for i, arg in enumerate(new_args):
+            if isinstance(arg, Tiled):
+                arg_indices.append(i)
+                inputs.append(arg)
+            else:
+                if isinstance(arg, Sequence):
+                    isinput = False
+                    for j, subarg in enumerate(arg):
+                        if isinstance(subarg, Tiled):
+                            arg_indices.append((i, j))
+                            isinput = True
+                    if isinput:
+                        new_args[i] = list(arg)
+                        inputs.append(arg)
+
+        for key, arg in new_kwargs.items():
+            if isinstance(arg, Tiled):
+                kwarg_indices.append(key)
+                inputs.append(arg)
+            else:
+                if isinstance(arg, Sequence):
+                    isinput = False
+                    for j, subarg in enumerate(arg):
+                        if isinstance(subarg, Tiled):
+                            kwarg_indices.append((key, j))
+                            isinput = True
+                    if isinput:
+                        new_kwargs[key] = list(arg)
+                        inputs.append(arg)
+
+        input_type = self.otype
+        if func is np.broadcast_arrays:
+            output_type = (input_type, ) * len([i for i in arg_indices if isinstance(i, int)])
+        else:
+            output_type = input_type
+
+        @partial(transform, input_type=(input_type, 'index_iterator'), output_type=output_type)
+        def transformed_func(tile):
+
+            tile, tile_index = tile
+
+            for arg_index in arg_indices:
+                if isinstance(arg_index, tuple):
+                    new_args[arg_index[0]][arg_index[1]] = args[arg_index[0]][arg_index[1]][tile_index]
+                else:
+                    new_args[arg_index] = args[arg_index][tile_index]
+
+            for kwarg_index in kwarg_indices:
+                if isinstance(kwarg_index, tuple):
+                    new_kwargs[kwarg_index[0]][kwarg_index[1]] = kwargs[kwarg_index[0]][kwarg_index[1]][tile_index]
+                else:
+                    new_kwargs[kwarg_index] = kwargs[kwarg_index][tile_index]
+
+            processed_tile = tile.__array_function__(func, types, tuple(new_args), new_kwargs)
+
+            return processed_tile
+
+        processed_tiles = self.dt.process((self, self.index_iterator), transformed_func)
+
+        for arg_index in arg_indices:
+            if isinstance(arg_index, tuple):
+                new_args[arg_index[0]][arg_index[1]] = Tiled
+            else:
+                new_args[arg_index] = Tiled
+
+            for kwarg_index in kwarg_indices:
+                if isinstance(kwarg_index, tuple):
+                    new_kwargs[kwarg_index[0]][kwarg_index[1]] = Tiled
+                else:
+                    new_kwargs[kwarg_index] = Tiled
+
+        if isinstance(processed_tiles, Tiled):
+            job = processed_tiles.job
+        else:
+            job = processed_tiles[0].job
+        job.type = 'array_function'
+        job.kwargs = {
+            'func': func,
+            'types': types,
+            'args': tuple(new_args),
+            'kwargs': new_kwargs
+        }
+        if self.dt.link_data:
+            job.input = inputs
 
         return processed_tiles
 
@@ -264,8 +387,6 @@ class Tiled(Data):
         tiles.job.kwargs = job_kwargs
         if self.dt.link_data:
             tiles.job.input = data
-        else:
-            tiles.job.input = None
 
         return tiles
 
@@ -411,19 +532,19 @@ class Tiled(Data):
         return border_indices
 
     @cached_property
-    def indices_iterator(self):
+    def index_iterator(self):
 
         """ Get a Tiled iterator for array indices.
 
         Returns
         -------
-            indices_iterator : IndexIterator
+            index_iterator : IndexIterator
                 Tiled iterator for array indices.
         """
 
-        indices_iterator = IndexIterator(self)
+        index_iterator = IndexIterator(self)
 
-        return indices_iterator
+        return index_iterator
 
     @cached_property
     def tile_indices_iterator(self):
