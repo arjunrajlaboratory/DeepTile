@@ -56,7 +56,7 @@ class Iterator:
         return nonempty_tiles
 
 
-class IndicesIterator(Iterator):
+class IndexIterator(Iterator):
 
     """ Iterator subclass for array indices.
 
@@ -102,7 +102,7 @@ class TileIndicesIterator(Iterator):
     def __init__(self, tiles):
 
         super().__init__(tiles)
-        self.otype = 'tile_index_iterator'
+        self.otype = 'tile_indices_iterator'
 
     def __getitem__(self, index):
 
@@ -140,7 +140,7 @@ class BorderIndicesIterator(Iterator):
     def __init__(self, tiles):
 
         super().__init__(tiles)
-        self.otype = 'border_index_iterator'
+        self.otype = 'border_indices_iterator'
 
     def __getitem__(self, index):
 
@@ -178,7 +178,7 @@ class StitchIndicesIterator(Iterator):
     def __init__(self, tiles):
 
         super().__init__(tiles)
-        self.otype = 'stitch_index_iterator'
+        self.otype = 'stitch_indices_iterator'
 
     def __getitem__(self, index):
 

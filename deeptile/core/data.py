@@ -2,7 +2,7 @@ import numpy as np
 from dask.array import Array
 from deeptile.core import utils
 from deeptile.core.algorithms import partial, transform
-from deeptile.core.iterators import IndicesIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
+from deeptile.core.iterators import IndexIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
 from deeptile.core.jobs import Job
 from deeptile.core.types import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
 from functools import cached_property
@@ -249,13 +249,13 @@ class Tiled(Data):
 
         if data_type == 'image':
             func_tile = transform(partial(utils.tile_image, image=data),
-                                  input_type='tile_index_iterator', output_type='tiled_image')
+                                  input_type='tile_indices_iterator', output_type='tiled_image')
             tiles = self.dt.process(self.tile_indices_iterator, func_tile)
             tile_size = self[self.nonempty_indices[0]].shape[-2:]
             tiles = utils.pad_tiles(tiles, tile_size, self.tile_indices)
         elif data_type == 'coords':
             func_tile = transform(partial(utils.tile_coords, coords=data),
-                                  input_type='tile_index_iterator', output_type='tiled_coords')
+                                  input_type='tile_indices_iterator', output_type='tiled_coords')
             tiles = self.dt.process(self.tile_indices_iterator, func_tile)
         else:
             raise ValueError("invalid data object type.")
@@ -417,11 +417,11 @@ class Tiled(Data):
 
         Returns
         -------
-            indices_iterator : IndicesIterator
+            indices_iterator : IndexIterator
                 Tiled iterator for array indices.
         """
 
-        indices_iterator = IndicesIterator(self)
+        indices_iterator = IndexIterator(self)
 
         return indices_iterator
 
