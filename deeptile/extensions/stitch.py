@@ -28,8 +28,7 @@ def stitch_tiles(blend=True, sigma=5):
 
         tiles = tiles.compute()
 
-        profile = tiles.profile
-        nonempty_indices = profile.nonempty_indices
+        nonempty_indices = tiles.nonempty_indices
         first_tile = tiles[nonempty_indices[0]]
         tile_size = first_tile.shape[-2:]
         dtype = first_tile.dtype
@@ -42,7 +41,7 @@ def stitch_tiles(blend=True, sigma=5):
         if blend:
 
             avg = np.zeros(stitch_shape[-2:])
-            taper = _generate_taper(tile_size, profile.overlap, sigma)
+            taper = _generate_taper(tile_size, tiles.profile.overlap, sigma)
 
             for index in nonempty_indices:
 
@@ -56,7 +55,7 @@ def stitch_tiles(blend=True, sigma=5):
                 stitched[stitch_slice] = stitched[stitch_slice] + tile[tile_slice] * taper[tile_slice]
                 avg[stitch_slice[1:]] = avg[stitch_slice[1:]] + taper[tile_slice]
 
-            stitched = stitched / avg
+            stitched = stitched / (avg + 1e-7)
             stitched = stitched.astype(dtype)
 
         else:
@@ -98,8 +97,7 @@ def stitch_masks(iou_threshold=0.1):
 
         masks = utils.unpad_tiles(masks)
 
-        profile = masks.profile
-        nonempty_indices = profile.nonempty_indices
+        nonempty_indices = masks.nonempty_indices
         first_mask = masks[nonempty_indices[0]]
 
         image_shape = masks.image_shape
@@ -184,8 +182,7 @@ def stitch_coords():
 
         coords = tiles.compute()
 
-        profile = coords.profile
-        nonempty_indices = profile.nonempty_indices
+        nonempty_indices = coords.nonempty_indices
         tile_indices_iterator = coords.tile_indices_iterator
         border_indices_iterator = coords.border_indices_iterator
         first_coord = coords[nonempty_indices[0]]

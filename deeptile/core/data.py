@@ -54,22 +54,13 @@ class Data(np.ndarray):
 
         return data
 
-    def __array_finalize__(self, data):
-
-        if data is None:
-            return
-        self.dt = getattr(data, 'dt', None)
-        self.profile = getattr(data, 'profile', None)
-        self.job = getattr(data, 'job', None)
-        self.otype = getattr(data, 'otype', None)
-
 
 class Tiled(Data):
 
     """ numpy.ndarray subclass for storing DeepTile tiled data.
     """
 
-    def __new__(cls, tiles, job, otype):
+    def __new__(cls, tiles, job, otype, mask=None):
 
         """ Create new Tiled object.
 
@@ -81,6 +72,8 @@ class Tiled(Data):
                 Job that generated this tiled object.
             otype : str
                 Tiled object type.
+            mask : numpy.ndarray or None, optional, default None
+                Boolean mask.
 
         Returns
         -------
@@ -91,8 +84,32 @@ class Tiled(Data):
         tiles = super().__new__(cls, tiles, job, otype, ALLOWED_TILED_TYPES)
         tiles.parent = tiles
         tiles.slices = []
+        if mask is None:
+            tiles.mask = np.ones(tiles.profile.tiling, dtype=bool)
+        else:
+            tiles.mask = mask
 
         return tiles
+
+    def __array_finalize__(self, tiles):
+
+        """ Finalize Tiled object.
+
+        Parameters
+        ----------
+            tiles : numpy.ndarray or Tiled
+                Array of tiles.
+        """
+
+        if tiles is None:
+            return
+        self.dt = getattr(tiles, 'dt', None)
+        self.profile = getattr(tiles, 'profile', None)
+        self.job = getattr(tiles, 'job', None)
+        self.otype = getattr(tiles, 'otype', None)
+        self.parent = getattr(tiles, 'parent', None)
+        self.slices = getattr(tiles, 'slices', None)
+        self.mask = getattr(tiles, 'mask', None)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **_kwargs):
 
@@ -157,7 +174,7 @@ class Tiled(Data):
                 Array of tiles.
         """
 
-        if isinstance(self[self.profile.nonempty_indices[0]], Array):
+        if isinstance(self[self.nonempty_indices[0]], Array):
 
             tiles = self.dt.process(self, transform(lambda tile: tile.compute(**kwargs),
                                                     input_type=self.otype, output_type=self.otype),
@@ -190,7 +207,7 @@ class Tiled(Data):
                 Array of tiles.
         """
 
-        if isinstance(self[self.profile.nonempty_indices[0]], Array):
+        if isinstance(self[self.nonempty_indices[0]], Array):
 
             tiles = self.dt.process(self, transform(lambda tile: tile.persist(**kwargs),
                                                     input_type=self.otype, output_type=self.otype),
@@ -231,26 +248,24 @@ class Tiled(Data):
         job_kwargs.pop('data')
 
         if data_type == 'image':
-
-            tile_size = self[self.profile.nonempty_indices[0]].shape[-2:]
-            tiles = utils.array_split_2d(data, self.tile_indices)
-            tiles = utils.cast_list_to_array(tiles)
+            func_tile = transform(partial(utils.tile_image, image=data),
+                                  input_type='tile_index_iterator', output_type='tiled_image')
+            tiles = self.dt.process(self.tile_indices_iterator, func_tile)
+            tile_size = self[self.nonempty_indices[0]].shape[-2:]
             tiles = utils.pad_tiles(tiles, tile_size, self.tile_indices)
-
-            job = Job(data, 'import_data', job_kwargs, self.profile)
-            tiles = Tiled(tiles, job, 'tiled_image')
-
         elif data_type == 'coords':
-
             func_tile = transform(partial(utils.tile_coords, coords=data),
                                   input_type='tile_index_iterator', output_type='tiled_coords')
             tiles = self.dt.process(self.tile_indices_iterator, func_tile)
-            tiles.job.type = 'import_data'
-            tiles.job.kwargs = job_kwargs
-
         else:
-
             raise ValueError("invalid data object type.")
+
+        tiles.job.type = 'import_data'
+        tiles.job.kwargs = job_kwargs
+        if self.dt.link_data:
+            tiles.job.input = data
+        else:
+            tiles.job.input = None
 
         return tiles
 
@@ -270,7 +285,7 @@ class Tiled(Data):
         if self.otype == 'tiled_image':
 
             profile = self.profile
-            tile_size = self[profile.nonempty_indices[0]].shape[-2:]
+            tile_size = self[self.nonempty_indices[0]].shape[-2:]
             profile_tile_size = profile.tile_size
             profile_image_shape = profile.dt.image_shape
             scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
@@ -308,18 +323,54 @@ class Tiled(Data):
         return scales
 
     @cached_property
+    def nonempty_mask(self):
+
+        """ Get a mask for nonempty tiles to be processed.
+
+        Returns
+        -------
+            nonempty_mask : numpy.ndarray
+                Mask for nonempty tiles to be processed.
+
+        Raises
+        ------
+            ValueError
+                If there are no nonempty tiles to process.
+        """
+
+        nonempty_mask = self.mask * self.profile.nonempty_mask
+        if not np.any(nonempty_mask):
+            raise ValueError("No nonempty tiles to process.")
+
+        return nonempty_mask
+
+    @cached_property
+    def nonempty_indices(self):
+
+        """ Get a list of indices for nonempty tiles to be processed.
+
+        Returns
+        -------
+            nonempty_indices : numpy.ndarray
+                Indices for nonempty tiles to be processed
+        """
+
+        nonempty_indices = tuple(zip(*(tuple(indices) for indices in np.where(self.nonempty_mask))))
+
+        return nonempty_indices
+
+    @cached_property
     def nonempty_tiles(self):
 
-        """ Get a list of nonempty tiles.
+        """ Get a list of nonempty tiles to be processed.
 
         Returns
         -------
             nonempty_tiles : list
-                List of nonempty tiles.
+                Nonempty tiles to be processed.
         """
 
-        nonempty_indices = self.profile.nonempty_indices
-        nonempty_tiles = self[tuple(zip(*nonempty_indices))]
+        nonempty_tiles = self[self.nonempty_mask].tolist()
 
         return nonempty_tiles
 
@@ -434,6 +485,21 @@ class Tiled(Data):
 
         return s
 
+    @cached_property
+    def m(self):
+
+        """ Get the Mask object for masking.
+
+        Returns
+        -------
+            m : Mask
+                Mask object for masking.
+        """
+
+        m = Mask(self)
+
+        return m
+
 
 class Stitched(Data):
 
@@ -463,6 +529,23 @@ class Stitched(Data):
 
         return stitched
 
+    def __array_finalize__(self, stitched):
+
+        """ Finalize Stitched object.
+
+        Parameters
+        ----------
+            stitched : numpy.ndarray
+                Stitched object.
+        """
+
+        if stitched is None:
+            return
+        self.dt = getattr(stitched, 'dt', None)
+        self.profile = getattr(stitched, 'profile', None)
+        self.job = getattr(stitched, 'job', None)
+        self.otype = getattr(stitched, 'otype', None)
+
 
 class Slice:
 
@@ -490,16 +573,51 @@ class Slice:
         Returns
         -------
             sliced_tiles : Tiled
-                Stitched object.
+                Sliced array of tiles.
         """
 
-        sliced_tiles = self.tiles.copy()
-        sliced_tiles.parent = self.tiles.parent
+        sliced_tiles = np.empty_like(self.tiles)
         sliced_tiles.slices = self.tiles.slices + [slices]
-        nonempty_indices = self.tiles.profile.nonempty_indices
+        nonempty_indices = self.tiles.nonempty_indices
         nonempty_tiles = self.tiles.nonempty_tiles
 
         for index, tile in zip(nonempty_indices, nonempty_tiles):
             sliced_tiles[index] = tile[slices]
 
         return sliced_tiles
+
+
+class Mask:
+
+    """ Mask class for masking Tiled objects.
+
+    Parameters
+    ----------
+        tiles : Tiled
+            Array of tiles.
+    """
+
+    def __init__(self, tiles):
+
+        self.tiles = tiles
+
+    def __getitem__(self, mask):
+
+        """ Mask Tiled object.
+
+        Parameters
+        ----------
+            mask : numpy.ndarray
+                Boolean mask.
+
+        Returns
+        -------
+            masked_tiles : Tiled
+                Masked array of tiles.
+        """
+
+        masked_tiles = np.empty_like(self.tiles)
+        masked_tiles[mask] = self.tiles[mask]
+        masked_tiles.mask = mask
+
+        return masked_tiles

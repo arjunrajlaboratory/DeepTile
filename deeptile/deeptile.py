@@ -61,10 +61,9 @@ class DeepTile:
         unpack_output_singleton = isinstance(func_process.output_type, str)
         output_type = utils.to_tuple(func_process.output_type)
 
-        profile = tiles[0].profile
-        nonempty_indices = profile.nonempty_indices
+        nonempty_indices = tiles[0].nonempty_indices
         nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
-        processed_tiles = [np.empty(profile.tiling, dtype=object) for _ in range(len(output_type))]
+        processed_tiles = [np.empty(tiles[0].profile.tiling, dtype=object) for _ in range(len(output_type))]
 
         if batch_axis:
             batch_axis_len = nonempty_tiles[0][0].shape[0]
@@ -112,7 +111,7 @@ class DeepTile:
                                                      output_type)
 
         job = Job(tiles, 'process', job_kwargs)
-        processed_tiles = [Tiled(ts, job, otype) for ts, otype in zip(processed_tiles, output_type)]
+        processed_tiles = [Tiled(ts, job, otype, tiles[0].mask) for ts, otype in zip(processed_tiles, output_type)]
 
         if unpack_output_singleton:
             processed_tiles = processed_tiles[0]
@@ -263,7 +262,7 @@ class DeepTileArray(DeepTile):
         super().__init__(image)
         self.image_type = 'array'
 
-    def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None))):
+    def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None), )):
 
         """ Split array into tiles.
 

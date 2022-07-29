@@ -126,11 +126,13 @@ def pad_tiles(tiles, tile_size, tile_indices):
 
     if tile_padding[0] > 0:
         for i, tile in enumerate(tiles[-1]):
-            tiles[-1, i] = array_pad(tile, tile_padding[0], -2)
+            if tile is not None:
+                tiles[-1, i] = array_pad(tile, tile_padding[0], -2)
 
     if tile_padding[1] > 0:
         for i, tile in enumerate(tiles[:, -1]):
-            tiles[i, -1] = array_pad(tile, tile_padding[1], -1)
+            if tile is not None:
+                tiles[i, -1] = array_pad(tile, tile_padding[1], -1)
 
     return tiles
 
@@ -186,6 +188,16 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
             ts[index] = t
 
     return tiles
+
+
+def tile_image(image, tile):
+
+    tile_index = tile
+
+    image_slice = np.s_[..., tile_index[0, 0]:tile_index[0, 1], tile_index[1, 0]:tile_index[1, 1]]
+    tiled_image = image[image_slice]
+
+    return tiled_image
 
 
 def tile_coords(coords, tile):

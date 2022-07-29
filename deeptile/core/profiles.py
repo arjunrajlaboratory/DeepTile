@@ -1,3 +1,7 @@
+import numpy as np
+from functools import cached_property
+
+
 class Profile:
 
     """ Profile class that stores tiling profiles created by a DeepTile object.
@@ -36,3 +40,19 @@ class Profile:
         self.jobs = []
 
         dt.profiles.append(self)
+
+    @cached_property
+    def nonempty_mask(self):
+
+        """ Get a mask for nonempty tiles.
+
+        Returns
+        -------
+            nonempty_mask : numpy.ndarray
+                Mask for nonempty tiles.
+        """
+
+        nonempty_mask = np.zeros(self.tiling, dtype=bool)
+        nonempty_mask[tuple(zip(*self.nonempty_indices))] = True
+
+        return nonempty_mask
