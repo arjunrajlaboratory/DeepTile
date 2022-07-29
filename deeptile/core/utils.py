@@ -205,9 +205,11 @@ def tile_coords(coords, tile):
     tile_index = tile
 
     if isinstance(coords, Sequence) or (coords.dtype is np.dtype('O')):
+        batch_axis = True
         n_batches = len(coords)
     else:
         coords = (coords,)
+        batch_axis = False
         n_batches = 1
 
     tiled_coords = np.empty(n_batches, dtype=object)
@@ -219,5 +221,8 @@ def tile_coords(coords, tile):
         s = (tile_index[0, 0] < coord[:, 0]) & (coord[:, 0] < tile_index[0, 1]) & \
             (tile_index[1, 0] < coord[:, 1]) & (coord[:, 1] < tile_index[1, 1])
         tiled_coords[n] = coord[s] - tile_index[:, 0]
+
+    if not batch_axis:
+        tiled_coords = tiled_coords[0]
 
     return tiled_coords
