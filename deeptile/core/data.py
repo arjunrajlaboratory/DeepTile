@@ -1,7 +1,6 @@
 import numpy as np
-from collections.abc import Sequence
 from dask.array import Array
-from deeptile.core import utils
+from deeptile.core import trees, utils
 from deeptile.core.algorithms import partial, transform
 from deeptile.core.iterators import IndexIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
 from deeptile.core.jobs import Job
@@ -92,7 +91,7 @@ class Tiled(Data):
 
         return tiles
 
-    def __array_finalize__(self, tiles):
+    def __array_finalize__(self, tiles, **kwargs):
 
         """ Finalize Tiled object.
 
@@ -186,11 +185,16 @@ class Tiled(Data):
                 Array of tiles after processing with ``func``.
         """
 
-        new_args, new_kwargs, arg_indices, kwarg_indices, inputs = _scan_arguments(args, kwargs)
+        arg_indices = [arg_index for arg_index in trees.tree_scan(args)[1]
+                       if isinstance(trees.tree_index(args, arg_index), Tiled)]
+        kwarg_indices = [kwarg_index for kwarg_index in trees.tree_scan(kwargs)[1]
+                         if isinstance(trees.tree_index(kwargs, kwarg_index), Tiled)]
+        inputs = [trees.tree_index(args, arg_index) for arg_index in arg_indices] + \
+                 [trees.tree_index(kwargs, kwarg_index) for kwarg_index in kwarg_indices]
 
         input_type = self.otype
         if func is np.broadcast_arrays:
-            output_type = (input_type, ) * len([i for i in arg_indices if isinstance(i, int)])
+            output_type = (input_type, ) * len([arg_index for arg_index in arg_indices if len(arg_index) == 1])
         else:
             output_type = input_type
 
@@ -199,16 +203,17 @@ class Tiled(Data):
 
             tile, tile_index = tile
 
-            _new_args, _new_kwargs = _get_new_arguments(args, kwargs, new_args, new_kwargs,
-                                                        arg_indices, kwarg_indices, tile_index)
+            new_args = trees.tree_apply(args, arg_indices, lambda tiles: tiles[tile_index])
+            new_kwargs = trees.tree_apply(kwargs, kwarg_indices, lambda tiles: tiles[tile_index])
 
-            processed_tile = tile.__array_function__(func, types, _new_args, _new_kwargs)
+            processed_tile = tile.__array_function__(func, types, new_args, new_kwargs)
 
             return processed_tile
 
         processed_tiles = self.dt.process((self, self.index_iterator), transformed_func)
 
-        new_args, new_kwargs = _remove_tiles(new_args, new_kwargs, arg_indices, kwarg_indices)
+        lite_args = trees.tree_apply(args, arg_indices, lambda tiles: Tiled)
+        lite_kwargs = trees.tree_apply(kwargs, kwarg_indices, lambda tiles: Tiled)
 
         if isinstance(processed_tiles, Tiled):
             job = processed_tiles.job
@@ -218,8 +223,8 @@ class Tiled(Data):
         job.kwargs = {
             'func': func,
             'types': types,
-            'args': new_args,
-            'kwargs': new_kwargs
+            'args': lite_args,
+            'kwargs': lite_kwargs
         }
         if self.dt.link_data:
             job.input = inputs
@@ -598,7 +603,7 @@ class Stitched(Data):
 
         return stitched
 
-    def __array_finalize__(self, stitched):
+    def __array_finalize__(self, stitched, **kwargs):
 
         """ Finalize Stitched object.
 
@@ -645,7 +650,8 @@ class Slice:
                 Sliced array of tiles.
         """
 
-        sliced_tiles = np.empty_like(self.tiles)
+        sliced_tiles = self.tiles.copy()
+        sliced_tiles[:] = None
         sliced_tiles.slices = self.tiles.slices + [slices]
         nonempty_indices = self.tiles.nonempty_indices
         nonempty_tiles = self.tiles.nonempty_tiles
@@ -685,86 +691,9 @@ class Mask:
                 Masked array of tiles.
         """
 
-        masked_tiles = np.empty_like(self.tiles)
+        masked_tiles = self.tiles.copy()
+        masked_tiles[:] = None
         masked_tiles[mask] = self.tiles[mask]
         masked_tiles.mask = mask
 
         return masked_tiles
-
-
-def _scan_arguments(args, kwargs):
-
-    new_args = list(args)
-    new_kwargs = kwargs.copy()
-    arg_indices = []
-    kwarg_indices = []
-    inputs = []
-    for i, arg in enumerate(new_args):
-        if isinstance(arg, Tiled):
-            arg_indices.append(i)
-            inputs.append(arg)
-        else:
-            if isinstance(arg, Sequence):
-                isinput = False
-                for j, subarg in enumerate(arg):
-                    if isinstance(subarg, Tiled):
-                        arg_indices.append((i, j))
-                        isinput = True
-                if isinput:
-                    new_args[i] = list(arg)
-                    inputs.append(arg)
-
-    for key, arg in new_kwargs.items():
-        if isinstance(arg, Tiled):
-            kwarg_indices.append(key)
-            inputs.append(arg)
-        else:
-            if isinstance(arg, Sequence):
-                isinput = False
-                for j, subarg in enumerate(arg):
-                    if isinstance(subarg, Tiled):
-                        kwarg_indices.append((key, j))
-                        isinput = True
-                if isinput:
-                    new_kwargs[key] = list(arg)
-                    inputs.append(arg)
-
-    return new_args, new_kwargs, arg_indices, kwarg_indices, inputs
-
-
-def _get_new_arguments(args, kwargs, new_args, new_kwargs, arg_indices, kwarg_indices, tile_index):
-
-    for arg_index in arg_indices:
-        if isinstance(arg_index, tuple):
-            new_args[arg_index[0]][arg_index[1]] = args[arg_index[0]][arg_index[1]][tile_index]
-        else:
-            new_args[arg_index] = args[arg_index][tile_index]
-
-    for kwarg_index in kwarg_indices:
-        if isinstance(kwarg_index, tuple):
-            new_kwargs[kwarg_index[0]][kwarg_index[1]] = kwargs[kwarg_index[0]][kwarg_index[1]][tile_index]
-        else:
-            new_kwargs[kwarg_index] = kwargs[kwarg_index][tile_index]
-
-    new_args = tuple(new_args)
-
-    return new_args, new_kwargs
-
-
-def _remove_tiles(new_args, new_kwargs, arg_indices, kwarg_indices):
-
-    for arg_index in arg_indices:
-        if isinstance(arg_index, tuple):
-            new_args[arg_index[0]][arg_index[1]] = Tiled
-        else:
-            new_args[arg_index] = Tiled
-
-        for kwarg_index in kwarg_indices:
-            if isinstance(kwarg_index, tuple):
-                new_kwargs[kwarg_index[0]][kwarg_index[1]] = Tiled
-            else:
-                new_kwargs[kwarg_index] = Tiled
-
-    new_args = tuple(new_args)
-
-    return new_args, new_kwargs
