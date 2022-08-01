@@ -95,8 +95,6 @@ def stitch_masks(iou_threshold=0.1):
 
         masks = tiles.compute()
 
-        masks = utils.unpad_tiles(masks)
-
         nonempty_indices = masks.nonempty_indices
         first_mask = masks[nonempty_indices[0]]
 
@@ -108,6 +106,8 @@ def stitch_masks(iou_threshold=0.1):
         mask_shape = (*first_mask.shape[:-2], *image_shape[-2:])
         mask_flat_shape = (np.prod(mask_shape[:-2], dtype=int), *mask_shape[-2:])
         stitched_mask = np.zeros(mask_flat_shape, dtype=int)
+
+        masks = utils.unpad_tiles(masks)
 
         for z in range(mask_flat_shape[0]):
 
