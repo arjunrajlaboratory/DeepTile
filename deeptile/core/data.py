@@ -704,6 +704,8 @@ class Mask:
                 Masked array of tiles.
         """
 
+        mask = np.broadcast_to(mask, self.tiles.shape).astype(bool)
+
         masked_tiles = self.tiles.copy()
         masked_tiles[:] = None
         masked_tiles[mask] = self.tiles[mask]
