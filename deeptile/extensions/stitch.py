@@ -28,7 +28,7 @@ def stitch_tiles(blend=True, sigma=5):
 
         tiles = tiles.compute()
 
-        nonempty_indices = tiles.nonempty_indices
+        nonempty_indices = tiles.nonempty_indices_tuples
         first_tile = tiles[nonempty_indices[0]]
         tile_size = first_tile.shape[-2:]
         dtype = first_tile.dtype
@@ -97,7 +97,7 @@ def stitch_masks(iou_threshold=0.1):
 
         masks = utils.unpad_tiles(masks)
 
-        nonempty_indices = masks.nonempty_indices
+        nonempty_indices = masks.nonempty_indices_tuples
         first_mask = masks[nonempty_indices[0]]
 
         image_shape = masks.image_shape
@@ -182,7 +182,7 @@ def stitch_coords():
 
         coords = tiles.compute()
 
-        nonempty_indices = coords.nonempty_indices
+        nonempty_indices = coords.nonempty_indices_tuples
         tile_indices_iterator = coords.tile_indices_iterator
         border_indices_iterator = coords.border_indices_iterator
         first_coord = coords[nonempty_indices[0]]

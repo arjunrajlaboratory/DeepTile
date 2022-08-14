@@ -250,7 +250,7 @@ class Tiled(Data):
                 Array of tiles.
         """
 
-        if isinstance(self[self.nonempty_indices[0]], Array):
+        if isinstance(self[self.nonempty_indices_tuples[0]], Array):
 
             tiles = self.dt.process(self, transform(lambda tile: tile.compute(**kwargs),
                                                     input_type=self.otype, output_type=self.otype),
@@ -283,7 +283,7 @@ class Tiled(Data):
                 Array of tiles.
         """
 
-        if isinstance(self[self.nonempty_indices[0]], Array):
+        if isinstance(self[self.nonempty_indices_tuples[0]], Array):
 
             tiles = self.dt.process(self, transform(lambda tile: tile.persist(**kwargs),
                                                     input_type=self.otype, output_type=self.otype),
@@ -359,7 +359,7 @@ class Tiled(Data):
         if self.otype == 'tiled_image':
 
             profile = self.profile
-            tile_size = self[self.nonempty_indices[0]].shape[-2:]
+            tile_size = self[self.nonempty_indices_tuples[0]].shape[-2:]
             profile_tile_size = profile.tile_size
             profile_image_shape = profile.dt.image_shape
             scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
@@ -421,32 +421,32 @@ class Tiled(Data):
     @cached_property
     def nonempty_indices(self):
 
-        """ Get a list of indices for nonempty tiles to be processed.
+        """ Get arrays of indices for nonempty tiles to be processed.
 
         Returns
         -------
-            nonempty_indices : numpy.ndarray
-                Indices for nonempty tiles to be processed
+            nonempty_indices : tuple of numpy.ndarray
+                Arrays of indices for nonempty tiles to be processed.
         """
 
-        nonempty_indices = tuple(zip(*(tuple(indices) for indices in np.where(self.nonempty_mask))))
+        nonempty_indices = np.where(self.nonempty_mask)
 
         return nonempty_indices
 
     @cached_property
-    def nonempty_tiles(self):
+    def nonempty_indices_tuples(self):
 
-        """ Get a list of nonempty tiles to be processed.
+        """ Get tuples of indices for nonempty tiles to be processed.
 
         Returns
         -------
-            nonempty_tiles : list
-                Nonempty tiles to be processed.
+            nonempty_indices_tuples : tuple of tuple
+                Tuples of indices for nonempty tiles to be processed.
         """
 
-        nonempty_tiles = self[self.nonempty_mask].tolist()
+        nonempty_indices_tuples = tuple(zip(*(tuple(indices) for indices in self.nonempty_indices)))
 
-        return nonempty_tiles
+        return nonempty_indices_tuples
 
     @cached_property
     def tile_indices(self):
@@ -465,6 +465,20 @@ class Tiled(Data):
                         np.rint(profile_tile_indices[1] * scales[1]).astype(int))
 
         return tile_indices
+
+    @cached_property
+    def nonempty_tiles(self):
+
+        """ Get a list of nonempty tiles to be processed.
+        Returns
+        -------
+            nonempty_tiles : list
+                Nonempty tiles to be processed.
+        """
+
+        nonempty_tiles = self[self.nonempty_mask].tolist()
+
+        return nonempty_tiles
 
     @cached_property
     def border_indices(self):
@@ -653,11 +667,10 @@ class Slice:
         sliced_tiles = self.tiles.copy()
         sliced_tiles[:] = None
         sliced_tiles.slices = self.tiles.slices + [slices]
-        nonempty_indices = self.tiles.nonempty_indices
-        nonempty_tiles = self.tiles.nonempty_tiles
+        nonempty_indices = self.tiles.nonempty_indices_tuples
 
-        for index, tile in zip(nonempty_indices, nonempty_tiles):
-            sliced_tiles[index] = tile[slices]
+        for index in nonempty_indices:
+            sliced_tiles[index] = self.tiles[index][slices]
 
         return sliced_tiles
 

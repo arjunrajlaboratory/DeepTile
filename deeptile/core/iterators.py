@@ -19,7 +19,7 @@ class Iterator:
         self.tiles = tiles
         self.mask = tiles.mask
         self.nonempty_mask = tiles.nonempty_mask
-        self.nonempty_indices = tiles.nonempty_indices
+        self.nonempty_indices = tiles.nonempty_indices_tuples
         self.otype = None
 
     def __getitem__(self, index):
@@ -50,7 +50,7 @@ class Iterator:
                 List of nonempty tiles.
         """
 
-        nonempty_indices = self.tiles.nonempty_indices
+        nonempty_indices = self.tiles.nonempty_indices_tuples
         nonempty_tiles = [self[nonempty_index] for nonempty_index in nonempty_indices]
 
         return nonempty_tiles
