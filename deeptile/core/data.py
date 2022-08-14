@@ -8,6 +8,29 @@ from deeptile.core.types import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
 from functools import cached_property
 
 
+class Output:
+
+    """ Output class for attaching metadata to function outputs.
+
+    Parameters
+    ----------
+        output : numpy.ndarray
+            Output array.
+        **kwargs : dict
+            Metadata associated with this function output.
+
+    Returns
+    -------
+        output : Output
+            Output array.
+    """
+
+    def __init__(self, output, **metadata):
+
+        self.output = output
+        self.metadata = metadata
+
+
 class Data(np.ndarray):
 
     """ numpy.ndarray subclass for storing DeepTile data.
