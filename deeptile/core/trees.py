@@ -12,35 +12,46 @@ def tree_scan(tree):
 
     Returns
     -------
+        istree : bool
+            Whether the object is a tree.
         branch_indices : list of tuple
             List of all branch indices.
         leaf_indices: list of tuple
             List of all leaf indices.
     """
 
-    current_index = [0]
-    branch_sizes = [len(tree)]
-    branch_indices = []
-    leaf_indices = []
+    istree = _check_istree(tree)
 
-    while len(current_index) > 0:
+    if istree:
 
-        if current_index[-1] < branch_sizes[-1]:
-            current_leaf = tree_index(tree, current_index)
-            if isinstance(current_leaf, (Sequence, Mapping)):
-                branch_sizes.append(len(current_leaf))
-                branch_indices.append(tuple(current_index))
-                current_index.append(0)
+        current_index = [0]
+        branch_sizes = [len(tree)]
+        branch_indices = []
+        leaf_indices = []
+
+        while len(current_index) > 0:
+
+            if current_index[-1] < branch_sizes[-1]:
+                current_obj = tree_index(tree, current_index)
+                if _check_istree(current_obj):
+                    branch_sizes.append(len(current_obj))
+                    branch_indices.append(tuple(current_index))
+                    current_index.append(0)
+                else:
+                    leaf_indices.append(tuple(current_index))
+                    current_index[-1] += 1
             else:
-                leaf_indices.append(tuple(current_index))
-                current_index[-1] += 1
-        else:
-            current_index.pop()
-            if len(current_index) > 0:
-                current_index[-1] += 1
-            branch_sizes.pop()
+                current_index.pop()
+                if len(current_index) > 0:
+                    current_index[-1] += 1
+                branch_sizes.pop()
 
-    return branch_indices, leaf_indices
+    else:
+
+        branch_indices = []
+        leaf_indices = []
+
+    return istree, branch_indices, leaf_indices
 
 
 def tree_apply(tree, leaf_indices, func):
@@ -62,24 +73,32 @@ def tree_apply(tree, leaf_indices, func):
             Tree object.
     """
 
-    if isinstance(tree, Sequence):
-        tree = list(tree)
-    elif isinstance(tree, Mapping):
-        tree = dict(tree)
+    if _check_istree(tree):
 
-    for leaf_index in leaf_indices:
+        if len(leaf_indices) > 0:
 
-        branch_index = leaf_index[:-1]
-        branch = tree_index(tree, branch_index)
+            if isinstance(tree, Sequence):
+                tree = list(tree)
+            elif isinstance(tree, Mapping):
+                tree = dict(tree)
 
-        if isinstance(branch, Sequence):
-            if not isinstance(branch, MutableSequence):
-                tree_replace(tree, branch_index, list(branch))
-        elif isinstance(branch, Mapping):
-            if not isinstance(branch, MutableMapping):
-                tree_replace(tree, branch_index, dict(branch))
+            branch_indices = _get_branches_from_leaves(leaf_indices)
 
-        tree_replace(tree, leaf_index, func(tree_index(tree, leaf_index)))
+            for branch_index in branch_indices:
+
+                branch = tree_index(tree, branch_index)
+
+                if isinstance(branch, Sequence):
+                    tree_replace(tree, branch_index, list(branch))
+                elif isinstance(branch, Mapping):
+                    tree_replace(tree, branch_index, dict(branch))
+
+            for leaf_index in leaf_indices:
+                tree_replace(tree, leaf_index, func(tree_index(tree, leaf_index)))
+
+    else:
+
+        tree = func(tree)
 
     return tree
 
@@ -138,3 +157,52 @@ def tree_index(tree, index):
             raise ValueError('tree branches be sequences or mappings.')
 
     return obj
+
+
+def _check_istree(obj):
+
+    """ (For internal use) Check if an object is a tree.
+
+    Parameters
+    ----------
+        obj
+            Object to be checked.
+
+    Returns
+    -------
+        istree : bool
+            Whether the object is a tree.
+    """
+
+    istree = isinstance(obj, (Mapping, Sequence)) and not isinstance(obj, str)
+
+    return istree
+
+
+def _get_branches_from_leaves(leaf_indices):
+
+    """ (For internal use) Get a list of branch indices from leaf indices.
+
+    Parameters
+    ----------
+        leaf_indices: list of tuple
+            List of leaf indices.
+
+    Returns
+    -------
+        branch_indices : list of tuple
+            List of branch indices.
+    """
+
+    branch_indices = set(index[:-1] for index in leaf_indices if len(index) > 1)
+    num_branches_i = None
+    num_branches_f = None
+    while (num_branches_f is None) or (num_branches_i < num_branches_f):
+        num_branches_i = len(branch_indices)
+        branch_indices = branch_indices | set(branch_index[:-1] for branch_index in branch_indices
+                                              if len(branch_index) > 1)
+        num_branches_f = len(branch_indices)
+    branch_indices = list(branch_indices)
+    branch_indices.sort(key=lambda index: len(index))
+
+    return branch_indices
