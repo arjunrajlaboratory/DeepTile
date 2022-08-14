@@ -467,20 +467,6 @@ class Tiled(Data):
         return tile_indices
 
     @cached_property
-    def nonempty_tiles(self):
-
-        """ Get a list of nonempty tiles to be processed.
-        Returns
-        -------
-            nonempty_tiles : list
-                Nonempty tiles to be processed.
-        """
-
-        nonempty_tiles = self[self.nonempty_mask].tolist()
-
-        return nonempty_tiles
-
-    @cached_property
     def border_indices(self):
 
         """ Calculate scaled border indices.

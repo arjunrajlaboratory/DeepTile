@@ -139,7 +139,7 @@ def pad_tiles(tiles, tile_size, tile_indices):
 
 def unpad_tiles(tiles):
 
-    tile_size = tiles.nonempty_tiles[0].shape[-2:]
+    tile_size = tiles[tiles.nonempty_indices_tuple[0]].shape[-2:]
     tile_indices = tiles.tile_indices
     tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
                     tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))

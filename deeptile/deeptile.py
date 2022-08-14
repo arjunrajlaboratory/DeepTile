@@ -62,7 +62,7 @@ class DeepTile:
         output_type = utils.to_tuple(func_process.output_type)
 
         nonempty_indices = tiles[0].nonempty_indices
-        nonempty_tiles = [ts.nonempty_tiles for ts in tiles]
+        nonempty_tiles = [ts[ts.nonempty_indices] for ts in tiles]
         processed_tiles = [np.empty(tiles[0].profile.tiling, dtype=object) for _ in range(len(output_type))]
 
         if batch_axis:

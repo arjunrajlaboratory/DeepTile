@@ -187,7 +187,7 @@ def stitch_coords():
         border_indices_iterator = coords.border_indices_iterator
         first_coord = coords[nonempty_indices[0]]
 
-        if coords.nonempty_tiles[0].dtype is np.dtype('O'):
+        if coords[coords.nonempty_indices_tuples[0]].dtype is np.dtype('O'):
             batch_axis = True
             n_batches = first_coord.shape[0]
         else:
