@@ -297,8 +297,7 @@ class DeepTileArray(DeepTile):
 
         tiling, tile_indices, border_indices = utils.calculate_indices(self.image_shape, tile_size, overlap)
         tiles = utils.array_split_2d(image, tile_indices)
-        tiles = utils.cast_list_to_array(tiles)
-        tiles = utils.pad_tiles(tiles, tile_size, tile_indices)
+        tiles = utils.cast_list_to_array_2d(tiles)
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)

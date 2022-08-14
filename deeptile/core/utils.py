@@ -110,6 +110,16 @@ def array_pad(ary, padding, axis=0):
 
 def cast_list_to_array(lst):
 
+    ary = np.empty(len(lst), dtype=object)
+
+    for i, subary in enumerate(lst):
+        ary[i] = subary
+
+    return ary
+
+
+def cast_list_to_array_2d(lst):
+
     ary = np.empty((len(lst), len(lst[0])), dtype=object)
 
     for i, sublst in enumerate(lst):
