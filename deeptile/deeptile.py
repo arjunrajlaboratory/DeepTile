@@ -349,7 +349,6 @@ class DeepTileLargeImage(DeepTile):
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
         tiles, tiling, tile_indices, border_indices = large_image.parse(self.image, self.image_shape,
                                                                         tile_size, overlap, slices)
-        tiles = utils.pad_tiles(tiles, tile_size, tile_indices)
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
