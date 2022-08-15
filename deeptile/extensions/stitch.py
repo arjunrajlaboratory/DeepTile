@@ -33,9 +33,8 @@ def stitch_tiles(blend=True, sigma=5):
         tile_size = first_tile.shape[-2:]
         dtype = first_tile.dtype
 
-        image_shape = tiles.image_shape
         tile_indices_iterator = tiles.tile_indices_iterator
-        stitch_shape = (*first_tile.shape[:-2], *image_shape[-2:])
+        stitch_shape = (*first_tile.shape[:-2], *tiles.image_size[-2:])
         stitched = np.zeros(stitch_shape)
 
         if blend:
@@ -100,12 +99,11 @@ def stitch_masks(iou_threshold=0.1):
         nonempty_indices = masks.nonempty_indices_tuples
         first_mask = masks[nonempty_indices[0]]
 
-        image_shape = masks.image_shape
         tile_indices = masks.tile_indices
         border_indices = masks.border_indices
         tile_indices_iterator = masks.tile_indices_iterator
         stitch_indices_iterator = masks.stitch_indices_iterator
-        mask_shape = (*first_mask.shape[:-2], *image_shape[-2:])
+        mask_shape = (*first_mask.shape[:-2], *masks.image_size[-2:])
         mask_flat_shape = (np.prod(mask_shape[:-2], dtype=int), *mask_shape[-2:])
         stitched_mask = np.zeros(mask_flat_shape, dtype=int)
 

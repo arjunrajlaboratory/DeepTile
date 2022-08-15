@@ -200,7 +200,7 @@ def update_tiles(tiles, index, tile, batch_axis, output_type):
     return tiles
 
 
-def tile_image(image, tile):
+def tile_image(tile, image):
 
     tile_index = tile
 
@@ -210,7 +210,7 @@ def tile_image(image, tile):
     return tiled_image
 
 
-def tile_coords(coords, tile):
+def tile_coords(tile, coords):
 
     tile_index = tile
 
