@@ -280,7 +280,7 @@ class DeepTileArray(DeepTile):
                 Size of each tile.
             overlap : tuple, optional, default (0.1, 0.1)
                 Fractions of ``tile_size`` to use for overlap.
-            slices : tuple, optional, default (slice(None))
+            slices : optional, default (slice(None))
                 Tuple of slice objects designating slices to be extracted.
 
         Returns
@@ -384,7 +384,7 @@ class DeepTileND2(DeepTile):
         ----------
             overlap : tuple or None, optional, default (0.1, 0.1)
                 Fractions to use for overlap. If ``None``, overlap is automatically determined from the ND2 metadata.
-            slices : tuple, optional, default (slice(None))
+            slices : optional, default (slice(None))
                 Tuple of slice objects designating slices to be extracted.
 
         Returns
