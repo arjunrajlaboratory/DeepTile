@@ -289,8 +289,8 @@ class DeepTileArray(DeepTile):
                 Array of tiles.
         """
 
-        job_kwargs = locals()
-        job_kwargs.pop('self')
+        job_locals = locals()
+        job_locals.pop('self')
 
         image = self.image[slices]
         self.image_shape = image.shape
@@ -301,8 +301,8 @@ class DeepTileArray(DeepTile):
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
-        job = Job(self.image, 'get_tiles', job_kwargs, profile)
-        tiles = Tiled(tiles, job, 'tiled_image')
+        job = Job(self.image, 'get_tiles', job_locals, profile)
+        tiles = Tiled(tiles, job)
 
         return tiles
 
@@ -341,8 +341,8 @@ class DeepTileLargeImage(DeepTile):
                 Array of tiles.
         """
 
-        job_kwargs = locals()
-        job_kwargs.pop('self')
+        job_locals = locals()
+        job_locals.pop('self')
 
         from deeptile.sources import large_image
 
@@ -353,8 +353,8 @@ class DeepTileLargeImage(DeepTile):
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
-        job = Job(self.image, 'get_tiles', job_kwargs, profile)
-        tiles = Tiled(tiles, job, 'tiled_image')
+        job = Job(self.image, 'get_tiles', job_locals, profile)
+        tiles = Tiled(tiles, job)
 
         return tiles
 
@@ -393,8 +393,8 @@ class DeepTileND2(DeepTile):
                 Array of tiles.
         """
 
-        job_kwargs = locals()
-        job_kwargs.pop('self')
+        job_locals = locals()
+        job_locals.pop('self')
 
         from deeptile.sources import nd2
 
@@ -404,7 +404,7 @@ class DeepTileND2(DeepTile):
         nonempty_indices = utils.get_nonempty_indices(tiles)
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
-        job = Job(self.image, 'get_tiles', job_kwargs, profile)
-        tiles = Tiled(tiles, job, 'tiled_image')
+        job = Job(self.image, 'get_tiles', job_locals, profile)
+        tiles = Tiled(tiles, job)
 
         return tiles
