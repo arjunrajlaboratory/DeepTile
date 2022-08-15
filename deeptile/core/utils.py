@@ -166,40 +166,6 @@ def unpad_tiles(tiles):
     return tiles
 
 
-def update_tiles(tiles, index, tile, batch_axis, output_type):
-
-    for i_output in range(len(tiles)):
-
-        ts = tiles[i_output]
-        t = tile[i_output]
-        otype = output_type[i_output]
-
-        if batch_axis:
-
-            current_tile = ts[index]
-            new_tile = None
-
-            if otype == 'tiled_image':
-
-                new_tile = t[None]
-
-            elif otype == 'tiled_coords':
-
-                new_tile = np.empty(1, dtype=object)
-                new_tile[0] = t
-
-            if isinstance(current_tile, np.ndarray):
-                ts[index] = np.concatenate((current_tile, new_tile), 0)
-            else:
-                ts[index] = new_tile
-
-        else:
-
-            ts[index] = t
-
-    return tiles
-
-
 def tile_image(tile, image):
 
     tile_index = tile
