@@ -56,7 +56,7 @@ def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_
 
         batch_axis_len = None
         if batch_axis:
-            batch_axis_len = reference[nonempty_indices[0][0], nonempty_indices[0][1]].shape[0]
+            batch_axis_len = reference[nonempty_indices[0][0], nonempty_indices[1][0]].shape[0]
             batch_axis_indices = np.tile(np.arange(batch_axis_len), len(nonempty_indices[0]))
             nonempty_indices = [np.repeat(np.array(indices), batch_axis_len, 0) for indices in nonempty_indices]
             nonempty_indices.append(batch_axis_indices)
