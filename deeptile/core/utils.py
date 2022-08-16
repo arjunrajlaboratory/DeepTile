@@ -129,43 +129,6 @@ def cast_list_to_array_2d(lst):
     return ary
 
 
-def pad_tiles(tiles, tile_size, tile_indices):
-
-    tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
-                    tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
-
-    if tile_padding[0] > 0:
-        for i, tile in enumerate(tiles[-1]):
-            if tile is not None:
-                tiles[-1, i] = array_pad(tile, tile_padding[0], -2)
-
-    if tile_padding[1] > 0:
-        for i, tile in enumerate(tiles[:, -1]):
-            if tile is not None:
-                tiles[i, -1] = array_pad(tile, tile_padding[1], -1)
-
-    return tiles
-
-
-def unpad_tiles(tiles):
-
-    tile_size = tiles[tiles.nonempty_indices_tuple[0]].shape[-2:]
-    tile_indices = tiles.tile_indices
-    tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
-                    tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
-
-    tiles = tiles.copy()
-
-    if tile_padding[0] > 0:
-        for i, tile in enumerate(tiles[-1]):
-            tiles[-1, i] = tile[..., :-tile_padding[0], :]
-    if tile_padding[1] > 0:
-        for i, tile in enumerate(tiles[:, -1]):
-            tiles[i, -1] = tile[..., :-tile_padding[1]]
-
-    return tiles
-
-
 def tile_image(tile, image):
 
     tile_index = tile
