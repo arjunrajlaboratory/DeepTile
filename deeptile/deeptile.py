@@ -116,7 +116,7 @@ class DeepTileArray(DeepTile):
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
         job = Job(self.image, 'get_tiles', job_locals, profile)
-        tiles = Tiled(tiles, job)
+        tiles = Tiled(tiles, job, stackable=False, tile_scales=(1.0, 1.0))
 
         return tiles
 
@@ -167,7 +167,7 @@ class DeepTileLargeImage(DeepTile):
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
         job = Job(self.image, 'get_tiles', job_locals, profile)
-        tiles = Tiled(tiles, job)
+        tiles = Tiled(tiles, job, stackable=False, tile_scales=(1.0, 1.0))
 
         return tiles
 
@@ -218,6 +218,6 @@ class DeepTileND2(DeepTile):
 
         profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
         job = Job(self.image, 'get_tiles', job_locals, profile)
-        tiles = Tiled(tiles, job)
+        tiles = Tiled(tiles, job, tile_scales=(1.0, 1.0))
 
         return tiles
