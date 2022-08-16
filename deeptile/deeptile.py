@@ -1,12 +1,12 @@
 from deeptile.core import utils
-from deeptile.core.data import Tiled, Stitched
+from deeptile.core.data import Tiled
 from deeptile.core.jobs import Job
 from deeptile.core.profiles import Profile
 
 
 class DeepTile:
 
-    """ Base DeepTile class that handles tile processing and stitching.
+    """ Base DeepTile class.
 
     Parameters
     ----------
@@ -22,51 +22,6 @@ class DeepTile:
         self.dask = None
         self.link_data = None
         self.profiles = []
-
-    def stitch(self, tiles, func_stitch):
-
-        """ Stitch tiles using a transformed function.
-
-        Parameters
-        ----------
-            tiles : Tiled or tuple of Tiled
-                Array of tiles.
-            func_stitch : Algorithm
-                Stitching function transformed into an Algorithm object.
-
-        Returns
-        -------
-            stitched : Stitched
-                Stitched array.
-        """
-
-        job_kwargs = locals()
-        job_kwargs.pop('self')
-        job_kwargs.pop('tiles')
-
-        tiles = utils.to_tuple(tiles)
-        self._check_compatibility(tiles, func_stitch, 'stitch')
-
-        unpack_input_singleton = isinstance(func_stitch.input_type, str)
-        unpack_output_singleton = isinstance(func_stitch.output_type, str)
-        output_type = utils.to_tuple(func_stitch.output_type)
-
-        if unpack_input_singleton:
-            tiles = tiles[0]
-
-        stitched = func_stitch(tiles=tiles)
-        stitched = utils.to_tuple(stitched)
-        self._check_data_count(stitched, output_type=output_type)
-
-        job = Job(tiles, 'stitch', job_kwargs)
-        stitched = [Stitched(s, job, otype) for s, otype in zip(stitched, output_type)]
-
-        if unpack_output_singleton:
-            stitched = stitched[0]
-        else:
-            stitched = tuple(stitched)
-
-        return stitched
 
 
 class DeepTileArray(DeepTile):
