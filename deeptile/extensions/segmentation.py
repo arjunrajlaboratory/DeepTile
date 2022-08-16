@@ -1,6 +1,7 @@
 import numpy as np
+from deeptile.core.lift import lift
 from deeptile.core.utils import compute_dask
-from deeptile.core.algorithms import transform
+from functools import partial
 
 
 def cellpose_segmentation(model_parameters, eval_parameters):
@@ -26,7 +27,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
     model = Cellpose(**model_parameters)
 
-    @transform
+    @lift
     def func_segment(tile):
 
         tile = compute_dask(tile)
@@ -58,7 +59,7 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
     model = Mesmer(**model_parameters)
 
-    @transform
+    @partial(lift, vectorized=True, batch_axis=True)
     def func_segment(tiles):
 
         tiles = compute_dask(tiles)
@@ -92,7 +93,7 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
     model = NuclearSegmentation(**model_parameters)
 
-    @transform
+    @partial(lift, vectorized=True, batch_axis=True)
     def func_segment(tiles):
 
         tiles = compute_dask(tiles)
@@ -125,7 +126,7 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
     model = CytoplasmSegmentation(**model_parameters)
 
-    @transform
+    @partial(lift, vectorized=True, batch_axis=True)
     def func_segment(tiles):
 
         tiles = compute_dask(tiles)
