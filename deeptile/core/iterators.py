@@ -19,7 +19,7 @@ class Iterator:
         self.mask = tiles.mask
         self.nonempty_mask = tiles.nonempty_mask
         self.nonempty_indices = tiles.nonempty_indices
-        self.nonempty_indices_tuple = tiles.nonempty_indices_tuples
+        self.nonempty_indices_tuples = tiles.nonempty_indices_tuples
 
     def __getitem__(self, index):
 
