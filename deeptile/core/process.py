@@ -7,7 +7,7 @@ import numpy as np
 
 def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
                        args, kwargs, arg_indices, kwarg_indices,
-                       job, profile, processed_istree, processed_indices, processed_tiles,
+                       job, reference, processed_istree, processed_indices, processed_tiles,
                        batch_indices):
 
     """ Process tiles using a vectorized function.
@@ -33,8 +33,8 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
             Leaf indices for ``kwargs``.
         job : Job
             Job associated with this processing step.
-        profile : Profile
-            Profile of the input tiles.
+        reference : Tiled
+            Reference array of tiles.
         processed_istree : bool
             Whether ``processed_tiles`` is a tree.
         processed_indices : list of tuple
@@ -59,8 +59,7 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
     processed_batch_tiles = func(*batch_args, **batch_kwargs)
 
     processed_istree, processed_indices, processed_tiles = \
-        initialize_tree(processed_batch_tiles, job, profile.tiling,
-                        processed_istree, processed_indices, processed_tiles)
+        initialize_tree(processed_batch_tiles, job, reference, processed_istree, processed_indices, processed_tiles)
 
     processed_batch_tiles = trees.tree_apply(processed_batch_tiles, processed_indices, strip_output_wrapper)
 
@@ -81,7 +80,7 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
 
 def process_single(func, batch_axis,
                    args, kwargs, arg_indices, kwarg_indices,
-                   job, profile, processed_istree, processed_indices, processed_tiles,
+                   job, reference, processed_istree, processed_indices, processed_tiles,
                    index):
 
     """ Process tiles using a function.
@@ -102,8 +101,8 @@ def process_single(func, batch_axis,
             Leaf indices for ``kwargs``.
         job : Job
             Job associated with this processing step.
-        profile : Profile
-            Profile of the input tiles.
+        reference : Tiled
+            Reference array of tiles.
         processed_istree : bool
             Whether ``processed_tiles`` is a tree.
         processed_indices : list of tuple
@@ -127,7 +126,7 @@ def process_single(func, batch_axis,
     processed_tile = func(*single_args, **single_kwargs)
 
     processed_istree, processed_indices, processed_tiles = \
-        initialize_tree(processed_tile, job, profile.tiling, processed_istree, processed_indices, processed_tiles)
+        initialize_tree(processed_tile, job, reference, processed_istree, processed_indices, processed_tiles)
 
     processed_tile = trees.tree_apply(processed_tile, processed_indices, strip_output_wrapper)
 
@@ -219,7 +218,7 @@ def create_batch(tiles, pad_final_batch, batch_size, batch_indices):
     return batch_tiles
 
 
-def initialize_tree(processed_tile, job, tiling, processed_istree, processed_indices, processed_tiles):
+def initialize_tree(processed_tile, job, reference, processed_istree, processed_indices, processed_tiles):
 
     """ Initialize a tree of Tiled objects.
 
@@ -229,8 +228,8 @@ def initialize_tree(processed_tile, job, tiling, processed_istree, processed_ind
             Processed tile.
         job : Job
             Job associated with this processing step.
-        tiling : tuple of int
-            Number of tiles in each dimension.
+        reference : Tiled
+            Reference array of tiles.
         processed_istree : bool
             Whether ``processed_tiles`` is a tree.
         processed_indices : list of tuple
@@ -251,12 +250,12 @@ def initialize_tree(processed_tile, job, tiling, processed_istree, processed_ind
     if processed_istree is None:
         processed_istree, _, processed_indices = trees.tree_scan(processed_tile)
         processed_tiles = trees.tree_apply(processed_tile, processed_indices,
-                                           partial(initialize_tiles, job=job, tiling=tiling))
+                                           partial(initialize_tiles, job=job, reference=reference))
 
     return processed_istree, processed_indices, processed_tiles
 
 
-def initialize_tiles(processed_tile, job, tiling):
+def initialize_tiles(processed_tile, job, reference):
 
     """ Initialize a Tiled object.
 
@@ -266,8 +265,8 @@ def initialize_tiles(processed_tile, job, tiling):
             Processed tile.
         job : Job
             Job associated with this processing step.
-        tiling : tuple of int
-            Number of tiles in each dimension.
+        reference : Tiled
+            Reference array of tiles.
 
     Returns
     -------
@@ -275,12 +274,12 @@ def initialize_tiles(processed_tile, job, tiling):
             Array of tiles.
     """
 
-    processed_tiles = np.empty(tiling, dtype=object)
+    processed_tiles = np.empty(reference.profile.tiling, dtype=object)
 
     if isinstance(processed_tile, Output):
-        processed_tiles = Tiled(processed_tiles, job, **processed_tile.metadata)
+        processed_tiles = Tiled(processed_tiles, job, reference.mask, **processed_tile.metadata)
     else:
-        processed_tiles = Tiled(processed_tiles, job)
+        processed_tiles = Tiled(processed_tiles, job, reference.mask)
 
     return processed_tiles
 

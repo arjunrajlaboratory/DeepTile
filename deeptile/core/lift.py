@@ -49,7 +49,6 @@ def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_
         job = Job(inputs, 'lifted_func', job_locals)
 
         reference = tiles[0]
-        profile = reference.profile
         nonempty_indices = reference.nonempty_indices
         processed_istree = None
         processed_indices = None
@@ -75,7 +74,7 @@ def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_
                 processed_istree, processed_indices, processed_tiles = \
                     process.process_vectorized(func, batch_axis, pad_final_batch, batch_size,
                                                args, kwargs, arg_indices, kwarg_indices,
-                                               job, profile, processed_istree, processed_indices, processed_tiles,
+                                               job, reference, processed_istree, processed_indices, processed_tiles,
                                                batch_indices)
 
         else:
@@ -85,7 +84,7 @@ def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_
                 processed_istree, processed_indices, processed_tiles = \
                     process.process_single(func, batch_axis,
                                            args, kwargs, arg_indices, kwarg_indices,
-                                           job, profile, processed_istree, processed_indices, processed_tiles,
+                                           job, reference, processed_istree, processed_indices, processed_tiles,
                                            index)
 
         return processed_tiles

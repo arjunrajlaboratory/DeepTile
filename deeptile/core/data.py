@@ -68,7 +68,7 @@ class Tiled(Data):
     """ numpy.ndarray subclass for storing DeepTile tiled data.
     """
 
-    def __new__(cls, tiles, job, isimage=True, stackable=True, tile_scales=None, mask=None):
+    def __new__(cls, tiles, job, mask=None, isimage=True, stackable=False, tile_scales=None):
 
         """ Create new Tiled object.
 
@@ -78,14 +78,14 @@ class Tiled(Data):
                 Array of tiles.
             job : Job
                 Job that generated this tiled object.
+            mask : numpy.ndarray or None, optional, default None
+                Boolean mask. If ``None``, a boolean array with all True values will be used.
             isimage : bool, optional, default True
                 Whether each tile is an image.
             stackable : bool, optional, default True
                 Whether tiles can be stacked.
             tile_scales : tuple of float or None, optional, default None
                 Tile scales relative to profile tile sizes. If ``None``, the values will be inferred.
-            mask : numpy.ndarray or None, optional, default None
-                Boolean mask. If ``None``, a boolean array with all True values will be used.
 
         Returns
         -------
@@ -167,7 +167,6 @@ class Tiled(Data):
         process.check_compatability(tiles)
 
         reference = tiles[0]
-        profile = reference.profile
         nonempty_indices = reference.nonempty_indices
         processed_istree = None
         processed_indices = None
@@ -178,7 +177,7 @@ class Tiled(Data):
             processed_istree, processed_indices, processed_tiles = \
                 process.process_single(reference[index].__array_ufunc__, False,
                                        args, kwargs, arg_indices, [],
-                                       job, profile, processed_istree, processed_indices, processed_tiles,
+                                       job, reference, processed_istree, processed_indices, processed_tiles,
                                        index)
 
         return processed_tiles
@@ -222,7 +221,6 @@ class Tiled(Data):
         process.check_compatability(tiles)
 
         reference = tiles[0]
-        profile = reference.profile
         nonempty_indices = reference.nonempty_indices
         processed_istree = None
         processed_indices = None
@@ -234,7 +232,7 @@ class Tiled(Data):
                 process.process_single(lambda _func, _types, _args, _kwargs:
                                        reference[index].__array_function__(_func, _types, tuple(_args), _kwargs), False,
                                        args, {}, arg_indices, [],
-                                       job, profile, processed_istree, processed_indices, processed_tiles,
+                                       job, reference, processed_istree, processed_indices, processed_tiles,
                                        index)
 
         return processed_tiles
