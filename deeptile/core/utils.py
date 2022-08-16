@@ -100,12 +100,12 @@ def array_split_2d(ary, indices):
     return sub_arys
 
 
-def array_pad(ary, padding, axis=0):
+def array_pad(ary, padding, axis=0, **kwargs):
 
     pad_width = [(0, 0)] * ary.ndim
     pad_width[axis] = (0, padding)
 
-    return np.pad(ary, pad_width)
+    return np.pad(ary, pad_width, **kwargs)
 
 
 def cast_list_to_array(lst):
