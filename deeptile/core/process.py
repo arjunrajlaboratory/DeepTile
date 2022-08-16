@@ -276,10 +276,15 @@ def initialize_tiles(processed_tile, job, reference):
 
     processed_tiles = np.empty(reference.profile.tiling, dtype=object)
 
+    mask = reference.mask
+    stackable = reference.metadata['stackable']
+
     if isinstance(processed_tile, Output):
-        processed_tiles = Tiled(processed_tiles, job, reference.mask, **processed_tile.metadata)
+        metadata = processed_tile.metadata
+        metadata['stackable'] = metadata.get('stackable', stackable)
+        processed_tiles = Tiled(processed_tiles, job, mask, **processed_tile.metadata)
     else:
-        processed_tiles = Tiled(processed_tiles, job, reference.mask)
+        processed_tiles = Tiled(processed_tiles, job, mask, stackable=stackable)
 
     return processed_tiles
 

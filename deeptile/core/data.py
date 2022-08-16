@@ -305,6 +305,80 @@ class Tiled(Data):
 
         return tiles
 
+    def pad(self, **kwargs):
+
+        """ Pad tiles to the same size.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        if self.metadata['isimage'] and not self.metadata['stackable']:
+
+            tiles = np.array(self)
+
+            tile_size = self.tile_size
+            tile_indices = self.tile_indices
+            tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
+                            tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
+
+            if tile_padding[0] > 0:
+                for i, tile in enumerate(tiles[-1]):
+                    if tile is not None:
+                        tiles[-1, i] = utils.array_pad(tile, tile_padding[0], -2, **kwargs)
+
+            if tile_padding[1] > 0:
+                for i, tile in enumerate(tiles[:, -1]):
+                    if tile is not None:
+                        tiles[i, -1] = utils.array_pad(tile, tile_padding[1], -1, **kwargs)
+
+            job = Job(self, 'pad_tiles', kwargs)
+
+            metadata = self.metadata.copy()
+            metadata['stackable'] = True
+            tiles = Tiled(tiles, job, self.mask, **metadata)
+
+        else:
+
+            tiles = self
+
+        return tiles
+
+    def unpad(self):
+
+        """ Unpad tiles.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        if self.metadata['isimage'] and self.metadata['stackable']:
+
+            tiles = np.array(self)
+
+            tile_indices = self.tile_indices
+
+            for i, tile in enumerate(tiles[-1]):
+                tiles[-1, i] = tile[..., :tile_indices[0][-1, 1] - tile_indices[0][-1, 0], :]
+            for i, tile in enumerate(tiles[:, -1]):
+                tiles[i, -1] = tile[..., :tile_indices[1][-1, 1] - tile_indices[1][-1, 0]]
+
+            job = Job(self, 'unpad_tiles', {})
+
+            metadata = self.metadata.copy()
+            metadata['stackable'] = False
+            tiles = Tiled(tiles, job, self.mask, **metadata)
+
+        else:
+
+            tiles = self
+
+        return tiles
+
     def import_data(self, data, data_type):
 
         """ Import external data and tile using the same tiling profile.
@@ -350,6 +424,21 @@ class Tiled(Data):
         return tiles
 
     @cached_property
+    def tile_size(self):
+
+        """ Get tile size.
+
+        Returns
+        -------
+            tile_size : tuple of int
+                Tile size.
+        """
+
+        tile_size = self[self.nonempty_indices_tuples[0]].shape[-2:]
+
+        return tile_size
+
+    @cached_property
     def tile_scales(self):
 
         """ Calculate tile scales relative to profile tile sizes.
@@ -367,7 +456,7 @@ class Tiled(Data):
 
             if self.metadata['isimage']:
 
-                tile_size = self[self.nonempty_indices_tuples[0]].shape[-2:]
+                tile_size = self.tile_size
                 tile_scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
 
             else:
