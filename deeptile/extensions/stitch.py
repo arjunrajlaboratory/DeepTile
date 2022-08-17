@@ -4,7 +4,7 @@ from deeptile.core.jobs import Job
 from skimage import measure
 
 
-def stitch_image(tiles, blend=True, sigma=5):
+def stitch_image(tiles, blend=True, sigma=10):
 
     """ Stitch tiled images into a large image.
 
@@ -14,7 +14,7 @@ def stitch_image(tiles, blend=True, sigma=5):
             Array of tiled images.
         blend : bool, optional, default True
             Whether to blend tile overlaps.
-        sigma : int, optional, default 5
+        sigma : int, optional, default 10
             Sigma bandwidth parameter used to generate sigmoid taper for blending. If ``blend`` is ``False``, this value
             is ignored.
 
