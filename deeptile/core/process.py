@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from deeptile.core import trees, utils
 from deeptile.core.data import Output, Tiled
 from functools import partial
@@ -204,7 +203,7 @@ def create_batch(tiles, pad_final_batch, batch_size, batch_indices):
     if len(batch_indices) == 2:
         batch_tiles = tiles[batch_indices]
     else:
-        if isinstance(batch_indices[0], Iterable):
+        if isinstance(batch_indices[0], np.ndarray):
             batch_tiles = [tiles[batch_index[:2]][batch_index[2]] for batch_index in zip(*batch_indices)]
             batch_tiles = utils.cast_list_to_array(batch_tiles)
         else:
@@ -331,7 +330,7 @@ def update_tiles(processed_tiles, processed_tile, index, batch_axis):
 
         current_tile = processed_tiles[index]
 
-        if processed_tiles.metadata['stackable']:
+        if processed_tiles.metadata['stackable'] or processed_tiles.metadata['isimage']:
 
             if current_tile is None:
                 processed_tiles[index] = processed_tile[None]
