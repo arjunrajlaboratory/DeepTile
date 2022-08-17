@@ -40,7 +40,7 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
         processed_indices : list of tuple
             Leaf indices for ``processed_tiles``.
         processed_tiles
-            Array of tiles processed with ``func``.
+            Tiles processed with ``func``.
         batch_indices : tuple of numpy.ndarray
             Batch indices of tiles.
 
@@ -51,7 +51,7 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
         processed_indices : list of tuple
             Leaf indices for ``processed_tiles``.
         processed_tiles
-            Array of tiles processed with ``func``.
+            Tiles processed with ``func``.
     """
 
     batch_args, batch_kwargs = get_arguments(pad_final_batch, batch_size,
@@ -108,7 +108,7 @@ def process_single(func, batch_axis,
         processed_indices : list of tuple
             Leaf indices for ``processed_tiles``.
         processed_tiles
-            Array of tiles processed with ``func``.
+            Tiles processed with ``func``.
         index : tuple of int
             Index of a tile.
 
@@ -119,7 +119,7 @@ def process_single(func, batch_axis,
         processed_indices : list of tuple
             Leaf indices for ``processed_tiles``.
         processed_tiles
-            Array of tiles processed with ``func``.
+            Tiles processed with ``func``.
     """
 
     single_args, single_kwargs = get_arguments(False, 1, args, kwargs, arg_indices, kwarg_indices, index)
@@ -235,7 +235,7 @@ def initialize_tree(processed_tile, job, reference, processed_istree, processed_
         processed_indices : list of tuple
             Leaf indices for ``processed_tiles``.
         processed_tiles
-            Array of tiles processed with ``func``.
+            Tiles processed with ``func``.
 
     Returns
     -------
@@ -244,7 +244,7 @@ def initialize_tree(processed_tile, job, reference, processed_istree, processed_
         processed_indices : list of tuple
             Leaf indices for ``processed_tiles``.
         processed_tiles
-            Array of tiles processed with ``func``.
+            Tiles processed with ``func``.
     """
 
     if processed_istree is None:
@@ -317,7 +317,7 @@ def update_tiles(processed_tiles, processed_tile, index, batch_axis):
 
     Parameters
     ----------
-        processed_tiles
+        processed_tiles: Tiled
             Array of tiles.
         processed_tile
             Processed tile.
