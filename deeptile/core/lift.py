@@ -6,32 +6,54 @@ from functools import wraps
 import numpy as np
 
 
-def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_size=4):
+class Lifted:
 
-    """ Lift function to be applied on all tiles.
-
-    Parameters
-    ----------
-        func : Callable
-            Callable for use in tile processing.
-        vectorized : bool, optional, default False
-            Whether the algorithm is vectorized to support batching.
-        batch_axis : bool, optional, default False
-            Whether to use the first axis to create batches.
-        pad_final_batch : bool, optional, default False
-            Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
-            batching, this value is ignored.
-        batch_size : int, optional, default 4
-            Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
-
-    Returns
-    -------
-        lifted_func : Callable
-            Lifted function.
+    """ Lifted class for functions lifted to be applied on Tiled objects.
     """
 
-    @wraps(func)
-    def lifted_func(*args, **kwargs):
+    def __new__(cls, func, vectorized, batch_axis, pad_final_batch, batch_size):
+
+        """ Lift function.
+
+        Parameters
+        ----------
+            func : Callable
+                Callable for use in tile processing.
+            vectorized : bool
+                Whether the algorithm is vectorized to support batching.
+            batch_axis : bool
+                Whether to use the first axis to create batches.
+            pad_final_batch : bool
+                Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
+                batching, this value is ignored.
+            batch_size : int
+                Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
+
+        Returns
+        -------
+            lifted_func : Callable
+                Lifted function.
+        """
+
+        lifted_func = super().__new__(cls)
+        lifted_func.__call__ = wraps(func)(lifted_func)
+        lifted_func.func = func
+        lifted_func.vectorized = vectorized
+        lifted_func.batch_axis = batch_axis
+        lifted_func.pad_final_batch = pad_final_batch
+        lifted_func.batch_size = batch_size
+
+        return lifted_func
+
+    def __call__(self, *args, **kwargs):
+
+        """ Apply lifted function on Tiled objects.
+
+        Returns
+        -------
+            processed_tiles
+                Tiles processed by lifted function.
+        """
 
         job_locals = locals()
 
@@ -54,25 +76,25 @@ def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_
         processed_indices = None
         processed_tiles = None
 
-        batch_axis_len = None
-        if batch_axis:
+        if self.batch_axis:
             batch_axis_len = reference[nonempty_indices[0][0], nonempty_indices[1][0]].shape[0]
             batch_axis_indices = np.tile(np.arange(batch_axis_len), len(nonempty_indices[0]))
             nonempty_indices = [np.repeat(np.array(indices), batch_axis_len, 0) for indices in nonempty_indices]
             nonempty_indices.append(batch_axis_indices)
             nonempty_indices = tuple(nonempty_indices)
 
-        if vectorized:
+        if self.vectorized:
 
-            n_batches = np.ceil(len(nonempty_indices[0]) / batch_size).astype(int)
+            n_batches = np.ceil(len(nonempty_indices[0]) / self.batch_size).astype(int)
 
             for batch in range(n_batches):
 
-                batch_offset = batch * batch_size
-                batch_indices = tuple(indices[batch_offset:batch_offset + batch_size] for indices in nonempty_indices)
+                batch_offset = batch * self.batch_size
+                batch_indices = tuple(indices[batch_offset:batch_offset + self.batch_size]
+                                      for indices in nonempty_indices)
 
                 processed_istree, processed_indices, processed_tiles = \
-                    process.process_vectorized(func, batch_axis, pad_final_batch, batch_size,
+                    process.process_vectorized(self.func, self.batch_axis, self.pad_final_batch, self.batch_size,
                                                args, kwargs, arg_indices, kwarg_indices,
                                                job, reference, processed_istree, processed_indices, processed_tiles,
                                                batch_indices)
@@ -82,11 +104,38 @@ def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_
             for index in zip(*nonempty_indices):
 
                 processed_istree, processed_indices, processed_tiles = \
-                    process.process_single(func, batch_axis,
+                    process.process_single(self.func, self.batch_axis,
                                            args, kwargs, arg_indices, kwarg_indices,
                                            job, reference, processed_istree, processed_indices, processed_tiles,
                                            index)
 
         return processed_tiles
+
+
+def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_size=4):
+
+    """ Lift function to be applied on Tiled objects.
+
+    Parameters
+    ----------
+        func : Callable
+            Callable for use in tile processing.
+        vectorized : bool, optional, default False
+            Whether the algorithm is vectorized to support batching.
+        batch_axis : bool, optional, default False
+            Whether to use the first axis to create batches.
+        pad_final_batch : bool, optional, default False
+            Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
+            batching, this value is ignored.
+        batch_size : int, optional, default 4
+            Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
+
+    Returns
+    -------
+        lifted_func : Callable
+            Lifted function.
+    """
+
+    lifted_func = Lifted(func, vectorized, batch_axis, pad_final_batch, batch_size)
 
     return lifted_func
