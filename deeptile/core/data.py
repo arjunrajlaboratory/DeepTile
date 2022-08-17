@@ -96,14 +96,14 @@ class Tiled(Data):
         tiles = super().__new__(cls, tiles, job)
         tiles.parent = tiles
         tiles.slices = []
+        if mask is None:
+            mask = np.ones(tiles.profile.tiling, dtype=bool)
+        tiles.mask = mask
         tiles.metadata = {
             'isimage': isimage,
             'stackable': stackable,
             'tile_scales': tile_scales
         }
-        if mask is None:
-            mask = np.ones(tiles.profile.tiling, dtype=bool)
-        tiles.mask = mask
 
         return tiles
 

@@ -17,6 +17,10 @@ class Iterator:
         self.profile = tiles.profile
         self.tiles = tiles
         self.mask = tiles.mask
+        self.metadata = {
+            'isimage': False,
+            'stackable': False,
+        }
         self.nonempty_mask = tiles.nonempty_mask
         self.nonempty_indices = tiles.nonempty_indices
         self.nonempty_indices_tuples = tiles.nonempty_indices_tuples
