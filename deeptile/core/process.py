@@ -212,7 +212,7 @@ def create_batch(tiles, pad_final_batch, batch_size, batch_indices):
 
     if (batch_tiles.dtype is np.dtype('O')) and tiles.metadata['stackable']:
         batch_tiles = np.stack(batch_tiles)
-        if pad_final_batch and (batch_tiles[0].shape[0] < batch_size):
+        if pad_final_batch and (batch_tiles.shape[0] < batch_size):
             batch_tiles = utils.array_pad(batch_tiles, batch_size - batch_tiles.shape[0], 0)
 
     return batch_tiles
