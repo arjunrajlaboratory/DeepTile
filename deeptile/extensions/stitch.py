@@ -36,11 +36,12 @@ def stitch_image(tiles, blend=True, sigma=10):
 
     tile_indices_iterator = tiles.tile_indices_iterator
     stitch_shape = (*first_tile.shape[:-2], *tiles.image_size[-2:])
-    stitched = np.zeros(stitch_shape)
 
     if blend:
 
-        avg = np.zeros(stitch_shape[-2:])
+        stitched = np.zeros(stitch_shape, dtype=np.float32)
+
+        avg = np.zeros(stitch_shape[-2:], dtype=np.float32)
         taper = _generate_taper(tile_size, tiles.profile.overlap, sigma)
 
         for index in nonempty_indices:
@@ -59,6 +60,8 @@ def stitch_image(tiles, blend=True, sigma=10):
         stitched = stitched.astype(dtype)
 
     else:
+
+        stitched = np.zeros(stitch_shape, dtype=dtype)
 
         stitch_indices_iterator = tiles.stitch_indices_iterator
 
