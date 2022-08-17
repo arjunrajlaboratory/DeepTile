@@ -237,7 +237,7 @@ class Tiled(Data):
 
         return processed_tiles
 
-    def compute(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
+    def compute(self, batch_axis=False, pad_final_batch=False, batch_size=None, **kwargs):
 
         """ Compute Dask arrays.
 
@@ -245,10 +245,10 @@ class Tiled(Data):
         ----------
             batch_axis : bool, optional, default False
                 Whether to use the first axis to create batches.
-            batch_size : int or None, optional, default None
-                Number of tiles in each batch.
             pad_final_batch : bool, optional, default False
                 Whether to pad the final batch to the specified ``batch_size``.
+            batch_size : int or None, optional, default None
+                Number of tiles in each batch.
 
         Returns
         -------
@@ -271,7 +271,7 @@ class Tiled(Data):
 
         return tiles
 
-    def persist(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
+    def persist(self, batch_axis=False, pad_final_batch=False, batch_size=None, **kwargs):
 
         """ Persist Dask arrays into memory.
 
@@ -279,10 +279,10 @@ class Tiled(Data):
         ----------
             batch_axis : bool, optional, default False
                 Whether to use the first axis to create batches.
-            batch_size : int or None, optional, default None
-                Number of tiles in each batch.
             pad_final_batch : bool, optional, default False
                 Whether to pad the final batch to the specified ``batch_size``.
+            batch_size : int or None, optional, default None
+                Number of tiles in each batch.
 
         Returns
         -------
