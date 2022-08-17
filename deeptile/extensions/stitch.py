@@ -27,8 +27,6 @@ def stitch_image(tiles, blend=True, sigma=10):
     job_locals = locals()
     job_locals.pop('tiles')
 
-    tiles = tiles.compute()
-
     job = Job(tiles, 'stitch_image', job_locals)
 
     nonempty_indices = tiles.nonempty_indices_tuples
@@ -97,7 +95,6 @@ def stitch_masks(masks, iou_threshold=0.1):
     job_locals = locals()
     job_locals.pop('masks')
 
-    masks = masks.compute()
     masks = masks.unpad()
 
     job = Job(masks, 'stitch_masks', job_locals)
@@ -185,7 +182,6 @@ def stitch_coords(coords):
             Stitched coordinates.
     """
 
-    coords = coords.compute()
     job = Job(coords, 'stitch_masks', {})
 
     nonempty_indices = coords.nonempty_indices_tuples
