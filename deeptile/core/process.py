@@ -331,10 +331,19 @@ def update_tiles(processed_tiles, processed_tile, index, batch_axis):
 
         current_tile = processed_tiles[index]
 
-        if current_tile is None:
-            processed_tiles[index] = processed_tile[None]
+        if processed_tiles.metadata['stackable']:
+
+            if current_tile is None:
+                processed_tiles[index] = processed_tile[None]
+            else:
+                processed_tiles[index] = np.concatenate((current_tile, processed_tile[None]), 0)
+
         else:
-            processed_tiles[index] = np.concatenate((current_tile, processed_tile[None]), 0)
+
+            if current_tile is None:
+                processed_tiles[index] = utils.cast_list_to_array([processed_tile])
+            else:
+                processed_tiles[index] = np.concatenate((current_tile, utils.cast_list_to_array([processed_tile])), 0)
 
     else:
 
