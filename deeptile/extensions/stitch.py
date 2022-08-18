@@ -1,228 +1,232 @@
 import numpy as np
-
-from deeptile.core import utils
-from deeptile.core.algorithms import partial, transform
+from deeptile.core.data import Stitched
+from deeptile.core.jobs import Job
 from skimage import measure
 
 
-def stitch_tiles(blend=True, sigma=5):
+def stitch_image(tiles, blend=True, sigma=10):
 
-    """ Generate Algorithm object for a tile stitching algorithm.
+    """ Stitch tiled images into a large image.
 
     Parameters
     ----------
+        tiles : Tiled
+            Array of tiled images.
         blend : bool, optional, default True
             Whether to blend tile overlaps.
-        sigma : int, optional, default 5
+        sigma : int, optional, default 10
             Sigma bandwidth parameter used to generate sigmoid taper for blending. If ``blend`` is ``False``, this value
             is ignored.
 
     Returns
     -------
-        func_stitch : Algorithm
-            Algorithm object with a tile stitching algorithm as the callable.
+        stitched : Stitched
+            Stitched image.
     """
 
-    @partial(transform, output_type='stitched_image')
-    def func_stitch(tiles):
+    job_locals = locals()
+    job_locals.pop('tiles')
 
-        tiles = tiles.compute()
+    job = Job(tiles, 'stitch_image', job_locals)
 
-        nonempty_indices = tiles.nonempty_indices
-        first_tile = tiles[nonempty_indices[0]]
-        tile_size = first_tile.shape[-2:]
-        dtype = first_tile.dtype
+    nonempty_indices = tiles.nonempty_indices_tuples
+    first_tile = tiles[nonempty_indices[0]]
+    tile_size = first_tile.shape[-2:]
+    dtype = first_tile.dtype
 
-        image_shape = tiles.image_shape
-        tile_indices_iterator = tiles.tile_indices_iterator
-        stitch_shape = (*first_tile.shape[:-2], *image_shape[-2:])
-        stitched = np.zeros(stitch_shape)
+    tile_indices_iterator = tiles.tile_indices_iterator
+    stitch_shape = (*first_tile.shape[:-2], *tiles.image_size[-2:])
 
-        if blend:
+    if blend:
 
-            avg = np.zeros(stitch_shape[-2:])
-            taper = _generate_taper(tile_size, tiles.profile.overlap, sigma)
+        stitched = np.zeros(stitch_shape, dtype=np.float32)
 
-            for index in nonempty_indices:
+        avg = np.zeros(stitch_shape[-2:], dtype=np.float32)
+        taper = _generate_taper(tile_size, tiles.profile.overlap, sigma)
 
-                tile_index = tile_indices_iterator[index]
+        for index in nonempty_indices:
 
-                tile = tiles[index]
-                stitch_slice = np.s_[..., tile_index[0, 0]:tile_index[0, 1],
-                                     tile_index[1, 0]:tile_index[1, 1]]
-                tile_slice = np.s_[..., :tile_index[0, 1] - tile_index[0, 0],
-                                        :tile_index[1, 1] - tile_index[1, 0]]
-                stitched[stitch_slice] = stitched[stitch_slice] + tile[tile_slice] * taper[tile_slice]
-                avg[stitch_slice[1:]] = avg[stitch_slice[1:]] + taper[tile_slice]
+            tile_index = tile_indices_iterator[index]
 
-            stitched = stitched / (avg + 1e-7)
-            stitched = stitched.astype(dtype)
+            tile = tiles[index]
+            stitch_slice = np.s_[..., tile_index[0, 0]:tile_index[0, 1],
+                                 tile_index[1, 0]:tile_index[1, 1]]
+            tile_slice = np.s_[..., :tile_index[0, 1] - tile_index[0, 0],
+                                    :tile_index[1, 1] - tile_index[1, 0]]
+            stitched[stitch_slice] = stitched[stitch_slice] + tile[tile_slice] * taper[tile_slice]
+            avg[stitch_slice[1:]] = avg[stitch_slice[1:]] + taper[tile_slice]
 
-        else:
+        stitched = stitched / (avg + 1e-7)
+        stitched = stitched.astype(dtype)
 
-            stitch_indices_iterator = tiles.stitch_indices_iterator
+    else:
 
-            for index in nonempty_indices:
+        stitched = np.zeros(stitch_shape, dtype=dtype)
 
-                i_image, j_image, i_tile, j_tile = stitch_indices_iterator[index]
+        stitch_indices_iterator = tiles.stitch_indices_iterator
 
-                tile = tiles[index]
-                tile_crop = tile[..., i_tile[0]:i_tile[1], j_tile[0]:j_tile[1]]
-                stitched[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
+        for index in nonempty_indices:
 
-        return stitched
+            i_image, j_image, i_tile, j_tile = stitch_indices_iterator[index]
 
-    return func_stitch
+            tile = tiles[index]
+            tile_crop = tile[..., i_tile[0]:i_tile[1], j_tile[0]:j_tile[1]]
+            stitched[..., i_image[0]:i_image[1], j_image[0]:j_image[1]] = tile_crop
+
+    stitched = Stitched(stitched, job)
+
+    return stitched
 
 
-def stitch_masks(iou_threshold=0.1):
+def stitch_masks(masks, iou_threshold=0.1):
 
-    """ Generate Algorithm object for a mask stitching algorithm.
+    """ Stitch tiled masks into a large mask.
 
     Parameters
     ----------
+        masks : Tiled
+            Array of tiled masks.
         iou_threshold : float, optional, default 0.1
             IOU score threshold used for mask stitching at tile borders.
 
     Returns
     -------
-        func_stitch : Algorithm
-            Algorithm object with a mask stitching algorithm as the callable.
+        stitched_mask : Stitched
+            Stitched mask.
     """
 
-    @partial(transform, output_type='stitched_image')
-    def func_stitch(tiles):
+    job_locals = locals()
+    job_locals.pop('masks')
 
-        masks = tiles.compute()
+    masks = masks.unpad()
 
-        nonempty_indices = masks.nonempty_indices
-        first_mask = masks[nonempty_indices[0]]
+    job = Job(masks, 'stitch_masks', job_locals)
 
-        image_shape = masks.image_shape
-        tile_indices = masks.tile_indices
-        border_indices = masks.border_indices
-        tile_indices_iterator = masks.tile_indices_iterator
-        stitch_indices_iterator = masks.stitch_indices_iterator
-        mask_shape = (*first_mask.shape[:-2], *image_shape[-2:])
-        mask_flat_shape = (np.prod(mask_shape[:-2], dtype=int), *mask_shape[-2:])
-        stitched_mask = np.zeros(mask_flat_shape, dtype=int)
+    nonempty_indices = masks.nonempty_indices_tuples
+    first_mask = masks[nonempty_indices[0]]
 
-        masks = utils.unpad_tiles(masks)
+    tile_indices = masks.tile_indices
+    border_indices = masks.border_indices
+    tile_indices_iterator = masks.tile_indices_iterator
+    stitch_indices_iterator = masks.stitch_indices_iterator
+    mask_shape = (*first_mask.shape[:-2], *masks.image_size[-2:])
+    mask_flat_shape = (np.prod(mask_shape[:-2], dtype=int), *mask_shape[-2:])
+    stitched_mask = np.zeros(mask_flat_shape, dtype=int)
 
-        for z in range(mask_flat_shape[0]):
+    for z in range(mask_flat_shape[0]):
 
-            total_count = 0
+        total_count = 0
 
-            for index in nonempty_indices:
+        for index in nonempty_indices:
 
-                i_image, j_image, i_tile, j_tile = stitch_indices_iterator[index]
+            i_image, j_image, i_tile, j_tile = stitch_indices_iterator[index]
 
-                i_clear = i_tile[(0 < i_image) & (i_image < mask_shape[-2])]
-                j_clear = j_tile[(0 < j_image) & (j_image < mask_shape[-1])]
+            i_clear = i_tile[(0 < i_image) & (i_image < mask_shape[-2])]
+            j_clear = j_tile[(0 < j_image) & (j_image < mask_shape[-1])]
 
-                mask = masks[index]
-                mask = mask.reshape(-1, *mask.shape[-2:])
-                mask = mask[z].copy()
-                mask = _clear_border(mask, i_clear, j_clear)
+            mask = masks[index]
+            mask = mask.reshape(-1, *mask.shape[-2:])
+            mask = mask[z].copy()
+            mask = _clear_border(mask, i_clear, j_clear)
 
-                mask_crop = mask[i_tile[0]:i_tile[1], j_tile[0]:j_tile[1]]
-                mask_crop = measure.label(mask_crop)
-                count = mask_crop.max()
-                mask_crop[mask_crop > 0] += total_count
-                total_count += count
-                stitched_mask[z, i_image[0]:i_image[1], j_image[0]:j_image[1]] = mask_crop
+            mask_crop = mask[i_tile[0]:i_tile[1], j_tile[0]:j_tile[1]]
+            mask_crop = measure.label(mask_crop)
+            count = mask_crop.max()
+            mask_crop[mask_crop > 0] += total_count
+            total_count += count
+            stitched_mask[z, i_image[0]:i_image[1], j_image[0]:j_image[1]] = mask_crop
 
-            border_blobs = _find_border_blobs(masks, tile_indices, border_indices, z)
+        border_blobs = _find_border_blobs(masks, tile_indices, border_indices, z)
 
-            for index, blobs in border_blobs.items():
+        for index, blobs in border_blobs.items():
 
-                tile_index = tile_indices_iterator[index]
+            tile_index = tile_indices_iterator[index]
 
-                mask = masks[index]
-                mask = mask.reshape(-1, *mask.shape[-2:])
-                mask = mask[z]
-                regions = measure.regionprops(mask)
-                regions = {region.label: region for region in regions}
+            mask = masks[index]
+            mask = mask.reshape(-1, *mask.shape[-2:])
+            mask = mask[z]
+            regions = measure.regionprops(mask)
+            regions = {region.label: region for region in regions}
 
-                for blob in blobs:
+            for blob in blobs:
 
-                    mask_crop = regions[blob].image
-                    s = regions[blob].slice
-                    s_image = (slice(s[0].start + tile_index[0, 0],
-                                     s[0].stop + tile_index[0, 0]),
-                               slice(s[1].start + tile_index[1, 0],
-                                     s[1].stop + tile_index[1, 0]))
-                    image_crop = stitched_mask[z][s_image]
+                mask_crop = regions[blob].image
+                s = regions[blob].slice
+                s_image = (slice(s[0].start + tile_index[0, 0],
+                                 s[0].stop + tile_index[0, 0]),
+                           slice(s[1].start + tile_index[1, 0],
+                                 s[1].stop + tile_index[1, 0]))
+                image_crop = stitched_mask[z][s_image]
 
-                    if _calculate_iou_score(mask_crop, image_crop > 0) < iou_threshold:
-                        image_crop[mask_crop] = total_count + 1
-                        total_count += 1
+                if _calculate_iou_score(mask_crop, image_crop > 0) < iou_threshold:
+                    image_crop[mask_crop] = total_count + 1
+                    total_count += 1
 
-            stitched_mask[z] = measure.label(stitched_mask[z])
+        stitched_mask[z] = measure.label(stitched_mask[z])
 
-        stitched_mask = stitched_mask.reshape(mask_shape)
+    stitched_mask = stitched_mask.reshape(mask_shape)
+    stitched_mask = Stitched(stitched_mask, job)
 
-        return stitched_mask
-
-    return func_stitch
+    return stitched_mask
 
 
-def stitch_coords():
+def stitch_coords(coords):
 
-    """ Generate Algorithm object for a coordinate stitching algorithm.
+    """ Stitch tiled coordinates.
+
+    Parameters
+    ----------
+        coords : Tiled
+            Array of tiled coordinates.
 
     Returns
     -------
-        func_stitch : Algorithm
-            Algorithm object with a coordinate stitching algorithm as the callable.
+        stitched_coords : Stitched
+            Stitched coordinates.
     """
 
-    @partial(transform, input_type='tiled_coords', output_type='stitched_coords')
-    def func_stitch(tiles):
+    job = Job(coords, 'stitch_masks', {})
 
-        coords = tiles.compute()
+    nonempty_indices = coords.nonempty_indices_tuples
+    tile_indices_iterator = coords.tile_indices_iterator
+    border_indices_iterator = coords.border_indices_iterator
+    first_coord = coords[nonempty_indices[0]]
 
-        nonempty_indices = coords.nonempty_indices
-        tile_indices_iterator = coords.tile_indices_iterator
-        border_indices_iterator = coords.border_indices_iterator
-        first_coord = coords[nonempty_indices[0]]
+    if coords[coords.nonempty_indices_tuples[0]].dtype is np.dtype('O'):
+        batch_axis = True
+        n_batches = first_coord.shape[0]
+    else:
+        batch_axis = False
+        n_batches = 1
 
-        if coords.nonempty_tiles[0].dtype is np.dtype('O'):
-            batch_axis = True
-            n_batches = first_coord.shape[0]
-        else:
-            batch_axis = False
-            n_batches = 1
+    stitched_coords = np.empty(n_batches, dtype=object)
 
-        stitched_coords = np.empty(n_batches, dtype=object)
+    for n in range(n_batches):
 
-        for n in range(n_batches):
+        batch_coords = []
 
-            batch_coords = []
+        for index in nonempty_indices:
 
-            for index in nonempty_indices:
+            tile_index = tile_indices_iterator[index]
+            border_index = border_indices_iterator[index]
 
-                tile_index = tile_indices_iterator[index]
-                border_index = border_indices_iterator[index]
+            if batch_axis:
+                coord = coords[index][n]
+            else:
+                coord = coords[index]
 
-                if batch_axis:
-                    coord = coords[index][n]
-                else:
-                    coord = coords[index]
+            coord = coord + np.array([tile_index[0, 0], tile_index[1, 0]])
+            s = (border_index[0, 0] < coord[:, 0]) & (coord[:, 0] < border_index[0, 1]) & \
+                (border_index[1, 0] < coord[:, 1]) & (coord[:, 1] < border_index[1, 1])
+            batch_coords.append(coord[s])
 
-                coord = coord + np.array([tile_index[0, 0], tile_index[1, 0]])
-                s = (border_index[0, 0] < coord[:, 0]) & (coord[:, 0] < border_index[0, 1]) & \
-                    (border_index[1, 0] < coord[:, 1]) & (coord[:, 1] < border_index[1, 1])
-                batch_coords.append(coord[s])
+        stitched_coords[n] = np.concatenate(batch_coords, axis=0)
 
-            stitched_coords[n] = np.concatenate(batch_coords, axis=0)
+    if not batch_axis:
+        stitched_coords = stitched_coords[0]
+    stitched_coords = Stitched(stitched_coords, job)
 
-        if not batch_axis:
-            stitched_coords = stitched_coords[0]
-
-        return stitched_coords
-
-    return func_stitch
+    return stitched_coords
 
 
 def _generate_taper(tile_size, overlap, sigma):

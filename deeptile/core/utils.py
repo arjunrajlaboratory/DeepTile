@@ -100,15 +100,25 @@ def array_split_2d(ary, indices):
     return sub_arys
 
 
-def array_pad(ary, padding, axis=0):
+def array_pad(ary, padding, axis=0, **kwargs):
 
     pad_width = [(0, 0)] * ary.ndim
     pad_width[axis] = (0, padding)
 
-    return np.pad(ary, pad_width)
+    return np.pad(ary, pad_width, **kwargs)
 
 
 def cast_list_to_array(lst):
+
+    ary = np.empty(len(lst), dtype=object)
+
+    for i, subary in enumerate(lst):
+        ary[i] = subary
+
+    return ary
+
+
+def cast_list_to_array_2d(lst):
 
     ary = np.empty((len(lst), len(lst[0])), dtype=object)
 
@@ -119,78 +129,7 @@ def cast_list_to_array(lst):
     return ary
 
 
-def pad_tiles(tiles, tile_size, tile_indices):
-
-    tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
-                    tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
-
-    if tile_padding[0] > 0:
-        for i, tile in enumerate(tiles[-1]):
-            if tile is not None:
-                tiles[-1, i] = array_pad(tile, tile_padding[0], -2)
-
-    if tile_padding[1] > 0:
-        for i, tile in enumerate(tiles[:, -1]):
-            if tile is not None:
-                tiles[i, -1] = array_pad(tile, tile_padding[1], -1)
-
-    return tiles
-
-
-def unpad_tiles(tiles):
-
-    tile_size = tiles.nonempty_tiles[0].shape[-2:]
-    tile_indices = tiles.tile_indices
-    tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
-                    tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
-
-    tiles = tiles.copy()
-
-    if tile_padding[0] > 0:
-        for i, tile in enumerate(tiles[-1]):
-            tiles[-1, i] = tile[..., :-tile_padding[0], :]
-    if tile_padding[1] > 0:
-        for i, tile in enumerate(tiles[:, -1]):
-            tiles[i, -1] = tile[..., :-tile_padding[1]]
-
-    return tiles
-
-
-def update_tiles(tiles, index, tile, batch_axis, output_type):
-
-    for i_output in range(len(tiles)):
-
-        ts = tiles[i_output]
-        t = tile[i_output]
-        otype = output_type[i_output]
-
-        if batch_axis:
-
-            current_tile = ts[index]
-            new_tile = None
-
-            if otype == 'tiled_image':
-
-                new_tile = t[None]
-
-            elif otype == 'tiled_coords':
-
-                new_tile = np.empty(1, dtype=object)
-                new_tile[0] = t
-
-            if isinstance(current_tile, np.ndarray):
-                ts[index] = np.concatenate((current_tile, new_tile), 0)
-            else:
-                ts[index] = new_tile
-
-        else:
-
-            ts[index] = t
-
-    return tiles
-
-
-def tile_image(image, tile):
+def tile_image(tile, image):
 
     tile_index = tile
 
@@ -200,7 +139,7 @@ def tile_image(image, tile):
     return tiled_image
 
 
-def tile_coords(coords, tile):
+def tile_coords(tile, coords):
 
     tile_index = tile
 

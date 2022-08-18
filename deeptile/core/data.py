@@ -1,11 +1,32 @@
 import numpy as np
 from dask.array import Array
 from deeptile.core import trees, utils
-from deeptile.core.algorithms import partial, transform
 from deeptile.core.iterators import IndexIterator, TileIndicesIterator, BorderIndicesIterator, StitchIndicesIterator
 from deeptile.core.jobs import Job
-from deeptile.core.types import ALLOWED_TILED_TYPES, ALLOWED_STITCHED_TYPES
-from functools import cached_property
+from functools import cached_property, partial
+
+
+class Output:
+
+    """ Output class for attaching metadata to function outputs.
+
+    Parameters
+    ----------
+        output : numpy.ndarray
+            Output array.
+        **kwargs : dict
+            Metadata associated with this function output.
+
+    Returns
+    -------
+        output : Output
+            Output array.
+    """
+
+    def __init__(self, output, **metadata):
+
+        self.output = output
+        self.metadata = metadata
 
 
 class Data(np.ndarray):
@@ -13,7 +34,7 @@ class Data(np.ndarray):
     """ numpy.ndarray subclass for storing DeepTile data.
     """
 
-    def __new__(cls, data, job, otype, allowed_otypes):
+    def __new__(cls, data, job):
 
         """ Create new Data object.
 
@@ -23,31 +44,18 @@ class Data(np.ndarray):
                 Data array.
             job : Job
                 Job that generated this data object.
-            otype : str
-                Data object type.
-            allowed_otypes : tuple
-                List of allowed data object type.
 
         Returns
         -------
             data : Data
                 Data array.
-
-        Raises
-        ------
-            ValueError
-                If ``otype`` is invalid.
         """
 
         data = np.asarray(data).view(cls)
 
-        if otype not in allowed_otypes:
-            raise ValueError("invalid data object type.")
-
         data.dt = job.dt
         data.profile = job.profile
         data.job = job
-        data.otype = otype
 
         if data.dt.link_data:
             data.job.output = data
@@ -60,7 +68,7 @@ class Tiled(Data):
     """ numpy.ndarray subclass for storing DeepTile tiled data.
     """
 
-    def __new__(cls, tiles, job, otype, mask=None):
+    def __new__(cls, tiles, job, mask=None, isimage=True, stackable=False, tile_scales=None):
 
         """ Create new Tiled object.
 
@@ -70,10 +78,14 @@ class Tiled(Data):
                 Array of tiles.
             job : Job
                 Job that generated this tiled object.
-            otype : str
-                Tiled object type.
             mask : numpy.ndarray or None, optional, default None
-                Boolean mask.
+                Boolean mask. If ``None``, a boolean array with all True values will be used.
+            isimage : bool, optional, default True
+                Whether each tile is an image.
+            stackable : bool, optional, default True
+                Whether tiles can be stacked.
+            tile_scales : tuple of float or None, optional, default None
+                Tile scales relative to profile tile sizes. If ``None``, the values will be inferred.
 
         Returns
         -------
@@ -81,13 +93,17 @@ class Tiled(Data):
                 Array of tiles.
         """
 
-        tiles = super().__new__(cls, tiles, job, otype, ALLOWED_TILED_TYPES)
+        tiles = super().__new__(cls, tiles, job)
         tiles.parent = tiles
         tiles.slices = []
         if mask is None:
-            tiles.mask = np.ones(tiles.profile.tiling, dtype=bool)
-        else:
-            tiles.mask = mask
+            mask = np.ones(tiles.profile.tiling, dtype=bool)
+        tiles.mask = mask
+        tiles.metadata = {
+            'isimage': isimage,
+            'stackable': stackable,
+            'tile_scales': tile_scales
+        }
 
         return tiles
 
@@ -106,9 +122,9 @@ class Tiled(Data):
         self.dt = getattr(tiles, 'dt', None)
         self.profile = getattr(tiles, 'profile', None)
         self.job = getattr(tiles, 'job', None)
-        self.otype = getattr(tiles, 'otype', None)
         self.parent = getattr(tiles, 'parent', None)
         self.slices = getattr(tiles, 'slices', None)
+        self.metadata = getattr(tiles, 'metadata', None)
         self.mask = getattr(tiles, 'mask', None)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
@@ -135,31 +151,34 @@ class Tiled(Data):
                 Array of tiles after processing with ``ufunc``.
         """
 
-        new_inputs = list(inputs)
-        input_indices = [i for i, inp in enumerate(inputs) if isinstance(inp, Tiled)]
+        from deeptile.core import process
 
-        @partial(transform, input_type=(self.otype, 'index_iterator'), output_type=self.otype)
-        def transformed_func(tile):
+        args = (ufunc, method, *inputs)
+        arg_indices = [arg_index for arg_index in trees.tree_scan(args)[2]
+                       if isinstance(trees.tree_index(args, arg_index), Tiled)]
 
-            tile, tile_index = tile
-
-            for arg_index in input_indices:
-                new_inputs[arg_index] = inputs[arg_index][tile_index]
-
-            processed_tile = tile.__array_ufunc__(ufunc, method, *new_inputs, **kwargs)
-
-            return processed_tile
-
-        dt = self.dt
-        processed_tiles = dt.process((self, self.index_iterator), transformed_func, batch_size=len(self.nonempty_tiles))
-        processed_tiles.job.type = 'array_ufunc'
-        processed_tiles.job.kwargs = {
-            'ufunc': ufunc,
-            'method': method,
+        job_locals = {
+            'args': trees.tree_apply(args, arg_indices, lambda ts: Tiled),
             'kwargs': kwargs
         }
-        if self.dt.link_data:
-            processed_tiles.job.input = inputs
+        job = Job(inputs, 'lifted_array_ufunc', job_locals)
+
+        tiles = [inp for inp in inputs if isinstance(inp, Tiled)]
+        process.check_compatability(tiles)
+
+        reference = tiles[0]
+        nonempty_indices = reference.nonempty_indices
+        processed_istree = None
+        processed_indices = None
+        processed_tiles = None
+
+        for index in zip(*nonempty_indices):
+
+            processed_istree, processed_indices, processed_tiles = \
+                process.process_single(reference[index].__array_ufunc__, False,
+                                       args, kwargs, arg_indices, [],
+                                       job, reference, processed_istree, processed_indices, processed_tiles,
+                                       index)
 
         return processed_tiles
 
@@ -185,53 +204,40 @@ class Tiled(Data):
                 Array of tiles after processing with ``func``.
         """
 
-        arg_indices = [arg_index for arg_index in trees.tree_scan(args)[1]
+        from deeptile.core import process
+
+        args = (func, types, args, kwargs)
+        arg_indices = [arg_index for arg_index in trees.tree_scan(args)[2]
                        if isinstance(trees.tree_index(args, arg_index), Tiled)]
-        kwarg_indices = [kwarg_index for kwarg_index in trees.tree_scan(kwargs)[1]
-                         if isinstance(trees.tree_index(kwargs, kwarg_index), Tiled)]
-        inputs = [trees.tree_index(args, arg_index) for arg_index in arg_indices] + \
-                 [trees.tree_index(kwargs, kwarg_index) for kwarg_index in kwarg_indices]
+        inputs = [trees.tree_index(args, arg_index) for arg_index in arg_indices]
 
-        input_type = self.otype
-        if func is np.broadcast_arrays:
-            output_type = (input_type, ) * len([arg_index for arg_index in arg_indices if len(arg_index) == 1])
-        else:
-            output_type = input_type
-
-        @partial(transform, input_type=(input_type, 'index_iterator'), output_type=output_type)
-        def transformed_func(tile):
-
-            tile, tile_index = tile
-
-            new_args = trees.tree_apply(args, arg_indices, lambda tiles: tiles[tile_index])
-            new_kwargs = trees.tree_apply(kwargs, kwarg_indices, lambda tiles: tiles[tile_index])
-
-            processed_tile = tile.__array_function__(func, types, new_args, new_kwargs)
-
-            return processed_tile
-
-        processed_tiles = self.dt.process((self, self.index_iterator), transformed_func)
-
-        lite_args = trees.tree_apply(args, arg_indices, lambda tiles: Tiled)
-        lite_kwargs = trees.tree_apply(kwargs, kwarg_indices, lambda tiles: Tiled)
-
-        if isinstance(processed_tiles, Tiled):
-            job = processed_tiles.job
-        else:
-            job = processed_tiles[0].job
-        job.type = 'array_function'
-        job.kwargs = {
-            'func': func,
-            'types': types,
-            'args': lite_args,
-            'kwargs': lite_kwargs
+        job_locals = {
+            'args': trees.tree_apply(args, arg_indices, lambda ts: Tiled),
+            'kwargs': {}
         }
-        if self.dt.link_data:
-            job.input = inputs
+        job = Job(inputs, 'lifted_array_function', job_locals)
+
+        tiles = [inp for inp in inputs if isinstance(inp, Tiled)]
+        process.check_compatability(tiles)
+
+        reference = tiles[0]
+        nonempty_indices = reference.nonempty_indices
+        processed_istree = None
+        processed_indices = None
+        processed_tiles = None
+
+        for index in zip(*nonempty_indices):
+
+            processed_istree, processed_indices, processed_tiles = \
+                process.process_single(lambda _func, _types, _args, _kwargs:
+                                       reference[index].__array_function__(_func, _types, tuple(_args), _kwargs), False,
+                                       args, {}, arg_indices, [],
+                                       job, reference, processed_istree, processed_indices, processed_tiles,
+                                       index)
 
         return processed_tiles
 
-    def compute(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
+    def compute(self, batch_axis=False, pad_final_batch=False, batch_size=None, **kwargs):
 
         """ Compute Dask arrays.
 
@@ -239,10 +245,10 @@ class Tiled(Data):
         ----------
             batch_axis : bool, optional, default False
                 Whether to use the first axis to create batches.
-            batch_size : int or None, optional, default None
-                Number of tiles in each batch.
             pad_final_batch : bool, optional, default False
                 Whether to pad the final batch to the specified ``batch_size``.
+            batch_size : int or None, optional, default None
+                Number of tiles in each batch.
 
         Returns
         -------
@@ -250,13 +256,14 @@ class Tiled(Data):
                 Array of tiles.
         """
 
-        if isinstance(self[self.nonempty_indices[0]], Array):
+        from deeptile.core.lift import lift
 
-            tiles = self.dt.process(self, transform(lambda tile: tile.compute(**kwargs),
-                                                    input_type=self.otype, output_type=self.otype),
-                                    batch_axis=batch_axis, batch_size=batch_size, pad_final_batch=pad_final_batch)
+        if isinstance(self[self.nonempty_indices_tuples[0]], Array):
+
+            tiles = lift(lambda tile: Output(tile.compute(**kwargs), **self.metadata),
+                         batch_axis=batch_axis, pad_final_batch=pad_final_batch, batch_size=batch_size)(self)
             tiles.job.type = 'compute_dask'
-            tiles.job.kwargs = kwargs
+            tiles.job.locals = kwargs
 
         else:
 
@@ -264,7 +271,7 @@ class Tiled(Data):
 
         return tiles
 
-    def persist(self, batch_axis=False, batch_size=None, pad_final_batch=False, **kwargs):
+    def persist(self, batch_axis=False, pad_final_batch=False, batch_size=None, **kwargs):
 
         """ Persist Dask arrays into memory.
 
@@ -272,10 +279,10 @@ class Tiled(Data):
         ----------
             batch_axis : bool, optional, default False
                 Whether to use the first axis to create batches.
-            batch_size : int or None, optional, default None
-                Number of tiles in each batch.
             pad_final_batch : bool, optional, default False
                 Whether to pad the final batch to the specified ``batch_size``.
+            batch_size : int or None, optional, default None
+                Number of tiles in each batch.
 
         Returns
         -------
@@ -283,13 +290,88 @@ class Tiled(Data):
                 Array of tiles.
         """
 
-        if isinstance(self[self.nonempty_indices[0]], Array):
+        from deeptile.core.lift import lift
 
-            tiles = self.dt.process(self, transform(lambda tile: tile.persist(**kwargs),
-                                                    input_type=self.otype, output_type=self.otype),
-                                    batch_axis=batch_axis, batch_size=batch_size, pad_final_batch=pad_final_batch)
+        if isinstance(self[self.nonempty_indices_tuples[0]], Array):
+
+            tiles = lift(lambda tile: Output(tile.persist(**kwargs), **self.metadata),
+                         batch_axis=batch_axis, pad_final_batch=pad_final_batch, batch_size=batch_size)(self)
             tiles.job.type = 'persist_dask'
-            tiles.job.kwargs = kwargs
+            tiles.job.locals = kwargs
+
+        else:
+
+            tiles = self
+
+        return tiles
+
+    def pad(self, **kwargs):
+
+        """ Pad tiles to the same size.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        if self.metadata['isimage'] and not self.metadata['stackable']:
+
+            tiles = np.array(self)
+
+            tile_size = self.tile_size
+            tile_indices = self.tile_indices
+            tile_padding = (tile_size[0] - (tile_indices[0][-1, 1] - tile_indices[0][-1, 0]),
+                            tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
+
+            if tile_padding[0] > 0:
+                for i, tile in enumerate(tiles[-1]):
+                    if tile is not None:
+                        tiles[-1, i] = utils.array_pad(tile, tile_padding[0], -2, **kwargs)
+
+            if tile_padding[1] > 0:
+                for i, tile in enumerate(tiles[:, -1]):
+                    if tile is not None:
+                        tiles[i, -1] = utils.array_pad(tile, tile_padding[1], -1, **kwargs)
+
+            job = Job(self, 'pad_tiles', kwargs)
+
+            metadata = self.metadata.copy()
+            metadata['stackable'] = True
+            tiles = Tiled(tiles, job, self.mask, **metadata)
+
+        else:
+
+            tiles = self
+
+        return tiles
+
+    def unpad(self):
+
+        """ Unpad tiles.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        if self.metadata['isimage'] and self.metadata['stackable']:
+
+            tiles = np.array(self)
+
+            tile_indices = self.tile_indices
+
+            for i, tile in enumerate(tiles[-1]):
+                tiles[-1, i] = tile[..., :tile_indices[0][-1, 1] - tile_indices[0][-1, 0], :]
+            for i, tile in enumerate(tiles[:, -1]):
+                tiles[i, -1] = tile[..., :tile_indices[1][-1, 1] - tile_indices[1][-1, 0]]
+
+            job = Job(self, 'unpad_tiles', {})
+
+            metadata = self.metadata.copy()
+            metadata['stackable'] = False
+            tiles = Tiled(tiles, job, self.mask, **metadata)
 
         else:
 
@@ -319,82 +401,109 @@ class Tiled(Data):
                 If ``data_type`` is invalid.
         """
 
-        job_kwargs = locals()
-        job_kwargs.pop('self')
-        job_kwargs.pop('data')
+        job_locals = locals()
+        job_locals.pop('self')
+        job_locals.pop('data')
+
+        from deeptile.core.lift import lift
 
         if data_type == 'image':
-            func_tile = transform(partial(utils.tile_image, image=data),
-                                  input_type='tile_indices_iterator', output_type='tiled_image')
-            tiles = self.dt.process(self.tile_indices_iterator, func_tile)
-            tile_size = self[self.nonempty_indices[0]].shape[-2:]
-            tiles = utils.pad_tiles(tiles, tile_size, self.tile_indices)
+            tiles = lift(partial(utils.tile_image, image=data))(self.tile_indices_iterator)
         elif data_type == 'coords':
-            func_tile = transform(partial(utils.tile_coords, coords=data),
-                                  input_type='tile_indices_iterator', output_type='tiled_coords')
-            tiles = self.dt.process(self.tile_indices_iterator, func_tile)
+            tiles = lift(partial(utils.tile_coords, coords=data))(self.tile_indices_iterator)
         else:
             raise ValueError("invalid data object type.")
 
         tiles.job.type = 'import_data'
-        tiles.job.kwargs = job_kwargs
+        tiles.job.locals = job_locals
         if self.dt.link_data:
             tiles.job.input = data
+        else:
+            tiles.job.input = None
 
         return tiles
 
     @cached_property
-    def image_shape(self):
+    def tile_size(self):
 
-        """ Calculate scaled image shape.
+        """ Get tile size.
 
         Returns
         -------
-            image_shape : tuple of int
-                Scaled image shape.
+            tile_size : tuple of int
+                Tile size.
         """
 
-        image_shape = None
+        tile_size = self[self.nonempty_indices_tuples[0]].shape[-2:]
 
-        if self.otype == 'tiled_image':
-
-            profile = self.profile
-            tile_size = self[self.nonempty_indices[0]].shape[-2:]
-            profile_tile_size = profile.tile_size
-            profile_image_shape = profile.dt.image_shape
-            scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
-            image_shape = (round(profile_image_shape[-2] * scales[0]), round(profile_image_shape[-1] * scales[1]))
-
-        elif self.otype == 'tiled_coords':
-
-            image_shape = self.dt.image_shape
-
-        return image_shape
+        return tile_size
 
     @cached_property
-    def scales(self):
+    def tile_scales(self):
 
         """ Calculate tile scales relative to profile tile sizes.
 
         Returns
         -------
-            scales : tuple of float
+            image_scales : tuple of float
                 Tile scales relative to profile tile sizes.
         """
 
-        scales = None
+        profile = self.profile
+        profile_tile_size = profile.tile_size
 
-        if self.otype == 'tiled_image':
+        if self.metadata['tile_scales'] is None:
 
-            profile_image_shape = self.dt.image_shape
-            image_shape = self.image_shape
-            scales = (image_shape[0] / profile_image_shape[-2], image_shape[1] / profile_image_shape[-1])
+            if self.metadata['isimage']:
 
-        elif self.otype == 'tiled_coords':
+                tile_size = self.tile_size
+                tile_scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
 
-            scales = (1.0, 1.0)
+            else:
 
-        return scales
+                tile_scales = (1.0, 1.0)
+
+        else:
+
+            tile_scales = self.metadata['tile_scales']
+            tile_size = (round(profile_tile_size[0] * tile_scales[0]), round(profile_tile_size[1] * tile_scales[1]))
+            tile_scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
+
+        return tile_scales
+
+    @cached_property
+    def image_size(self):
+
+        """ Calculate scaled image size.
+
+        Returns
+        -------
+            image_size : tuple of int
+                Scaled image size.
+        """
+
+        profile_image_shape = self.profile.dt.image_shape
+        tile_scales = self.tile_scales
+        image_size = (round(profile_image_shape[-2] * tile_scales[0]), round(profile_image_shape[-1] * tile_scales[1]))
+
+        return image_size
+
+    @cached_property
+    def image_scales(self):
+
+        """ Calculate image scales relative to profile image size.
+
+        Returns
+        -------
+            image_scales : tuple of float
+                Image scales relative to profile image size.
+        """
+
+        profile_image_shape = self.dt.image_shape
+        image_size = self.image_size
+        image_scales = (image_size[0] / profile_image_shape[-2], image_size[1] / profile_image_shape[-1])
+
+        return image_scales
 
     @cached_property
     def nonempty_mask(self):
@@ -421,32 +530,32 @@ class Tiled(Data):
     @cached_property
     def nonempty_indices(self):
 
-        """ Get a list of indices for nonempty tiles to be processed.
+        """ Get arrays of indices for nonempty tiles to be processed.
 
         Returns
         -------
-            nonempty_indices : numpy.ndarray
-                Indices for nonempty tiles to be processed
+            nonempty_indices : tuple of numpy.ndarray
+                Arrays of indices for nonempty tiles to be processed.
         """
 
-        nonempty_indices = tuple(zip(*(tuple(indices) for indices in np.where(self.nonempty_mask))))
+        nonempty_indices = np.where(self.nonempty_mask)
 
         return nonempty_indices
 
     @cached_property
-    def nonempty_tiles(self):
+    def nonempty_indices_tuples(self):
 
-        """ Get a list of nonempty tiles to be processed.
+        """ Get tuples of indices for nonempty tiles to be processed.
 
         Returns
         -------
-            nonempty_tiles : list
-                Nonempty tiles to be processed.
+            nonempty_indices_tuples : tuple of tuple
+                Tuples of indices for nonempty tiles to be processed.
         """
 
-        nonempty_tiles = self[self.nonempty_mask].tolist()
+        nonempty_indices_tuples = tuple(zip(*(tuple(indices) for indices in self.nonempty_indices)))
 
-        return nonempty_tiles
+        return nonempty_indices_tuples
 
     @cached_property
     def tile_indices(self):
@@ -459,10 +568,10 @@ class Tiled(Data):
                 Scaled tile indices.
         """
 
-        scales = self.scales
+        image_scales = self.image_scales
         profile_tile_indices = self.profile.tile_indices
-        tile_indices = (np.rint(profile_tile_indices[0] * scales[0]).astype(int),
-                        np.rint(profile_tile_indices[1] * scales[1]).astype(int))
+        tile_indices = (np.rint(profile_tile_indices[0] * image_scales[0]).astype(int),
+                        np.rint(profile_tile_indices[1] * image_scales[1]).astype(int))
 
         return tile_indices
 
@@ -477,10 +586,10 @@ class Tiled(Data):
                 Scaled border indices.
         """
 
-        scales = self.scales
+        image_scales = self.image_scales
         profile_border_indices = self.profile.border_indices
-        border_indices = (np.rint(profile_border_indices[0] * scales[0]).astype(int),
-                          np.rint(profile_border_indices[1] * scales[1]).astype(int))
+        border_indices = (np.rint(profile_border_indices[0] * image_scales[0]).astype(int),
+                          np.rint(profile_border_indices[1] * image_scales[1]).astype(int))
 
         return border_indices
 
@@ -580,7 +689,7 @@ class Stitched(Data):
     """ numpy.ndarray subclass for storing DeepTile stitched data.
     """
 
-    def __new__(cls, stitched, job, otype):
+    def __new__(cls, stitched, job):
 
         """ Create new Stitched object.
 
@@ -590,8 +699,6 @@ class Stitched(Data):
                 Stitched object.
             job : Job
                 Job that generated this stitched object.
-            otype : str
-                Stitched object type.
 
         Returns
         -------
@@ -599,7 +706,7 @@ class Stitched(Data):
                 Stitched object.
         """
 
-        stitched = super().__new__(cls, stitched, job, otype, ALLOWED_STITCHED_TYPES)
+        stitched = super().__new__(cls, stitched, job)
 
         return stitched
 
@@ -618,7 +725,6 @@ class Stitched(Data):
         self.dt = getattr(stitched, 'dt', None)
         self.profile = getattr(stitched, 'profile', None)
         self.job = getattr(stitched, 'job', None)
-        self.otype = getattr(stitched, 'otype', None)
 
 
 class Slice:
@@ -653,11 +759,10 @@ class Slice:
         sliced_tiles = self.tiles.copy()
         sliced_tiles[:] = None
         sliced_tiles.slices = self.tiles.slices + [slices]
-        nonempty_indices = self.tiles.nonempty_indices
-        nonempty_tiles = self.tiles.nonempty_tiles
+        nonempty_indices = self.tiles.nonempty_indices_tuples
 
-        for index, tile in zip(nonempty_indices, nonempty_tiles):
-            sliced_tiles[index] = tile[slices]
+        for index in nonempty_indices:
+            sliced_tiles[index] = self.tiles[index][slices]
 
         return sliced_tiles
 
@@ -690,6 +795,8 @@ class Mask:
             masked_tiles : Tiled
                 Masked array of tiles.
         """
+
+        mask = np.broadcast_to(mask, self.tiles.shape).astype(bool)
 
         masked_tiles = self.tiles.copy()
         masked_tiles[:] = None

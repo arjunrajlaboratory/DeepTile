@@ -1,5 +1,4 @@
 import numpy as np
-from functools import cached_property
 
 
 class Iterator:
@@ -18,9 +17,13 @@ class Iterator:
         self.profile = tiles.profile
         self.tiles = tiles
         self.mask = tiles.mask
+        self.metadata = {
+            'isimage': False,
+            'stackable': False,
+        }
         self.nonempty_mask = tiles.nonempty_mask
         self.nonempty_indices = tiles.nonempty_indices
-        self.otype = None
+        self.nonempty_indices_tuples = tiles.nonempty_indices_tuples
 
     def __getitem__(self, index):
 
@@ -39,37 +42,11 @@ class Iterator:
 
         raise NotImplementedError("no __getitem__ method has been set.")
 
-    @cached_property
-    def nonempty_tiles(self):
-
-        """ Get a list of nonempty tiles.
-
-        Returns
-        -------
-            nonempty_tiles : list
-                List of nonempty tiles.
-        """
-
-        nonempty_indices = self.tiles.nonempty_indices
-        nonempty_tiles = [self[nonempty_index] for nonempty_index in nonempty_indices]
-
-        return nonempty_tiles
-
 
 class IndexIterator(Iterator):
 
     """ Iterator subclass for array indices.
-
-    Parameters
-    ----------
-        tiles : Tiled
-            Array of tiles.
     """
-
-    def __init__(self, tiles):
-
-        super().__init__(tiles)
-        self.otype = 'index_iterator'
 
     def __getitem__(self, index):
 
@@ -92,17 +69,7 @@ class IndexIterator(Iterator):
 class TileIndicesIterator(Iterator):
 
     """ Iterator subclass for tile indices.
-
-    Parameters
-    ----------
-        tiles : Tiled
-            Array of tiles.
     """
-
-    def __init__(self, tiles):
-
-        super().__init__(tiles)
-        self.otype = 'tile_indices_iterator'
 
     def __getitem__(self, index):
 
@@ -130,17 +97,7 @@ class TileIndicesIterator(Iterator):
 class BorderIndicesIterator(Iterator):
 
     """ Iterator subclass for border indices.
-
-    Parameters
-    ----------
-        tiles : Tiled
-            Array of tiles.
     """
-
-    def __init__(self, tiles):
-
-        super().__init__(tiles)
-        self.otype = 'border_indices_iterator'
 
     def __getitem__(self, index):
 
@@ -168,17 +125,7 @@ class BorderIndicesIterator(Iterator):
 class StitchIndicesIterator(Iterator):
 
     """ Iterator subclass for stitch indices.
-
-    Parameters
-    ----------
-        tiles : Tiled
-            Array of tiles.
     """
-
-    def __init__(self, tiles):
-
-        super().__init__(tiles)
-        self.otype = 'stitch_indices_iterator'
 
     def __getitem__(self, index):
 

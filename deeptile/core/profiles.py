@@ -10,13 +10,13 @@ class Profile:
     ----------
         dt : DeepTile
             DeepTile object.
-        tiling : tuple
-                Number of tiles in each dimension.
-        tile_size : tuple
+        tiling : tuple of int
+            Number of tiles in each dimension.
+        tile_size : tuple of int
             Size of each tile.
-        overlap : tuple
+        overlap : tuple of float
             Fractions of ``tile_size`` to use for overlap.
-        slices : tuple or int
+        slices
             Slices to be extracted.
         nonempty_indices : tuple of tuple
             Indices of nonempty tiles.
