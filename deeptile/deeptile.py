@@ -63,7 +63,6 @@ class DeepTileArray(DeepTile):
 
         image = self.image[slices]
         self.image_shape = image.shape
-        tile_size = (min(tile_size[0], self.image_shape[-2]), min(tile_size[1], self.image_shape[-1]))
 
         tiling, tile_indices, border_indices = utils.calculate_indices(self.image_shape, tile_size, overlap)
         tiles = utils.array_split_2d(image, tile_indices)
@@ -117,7 +116,6 @@ class DeepTileLargeImage(DeepTile):
         from deeptile.sources import large_image
 
         self.image_shape = (self.image.getMetadata()['sizeY'], self.image.getMetadata()['sizeX'])
-        tile_size = (min(tile_size[0], self.image_shape[-2]), min(tile_size[1], self.image_shape[-1]))
         tiles, tiling, tile_indices, border_indices = large_image.parse(self.image, self.image_shape,
                                                                         tile_size, overlap, slices)
         nonempty_indices = utils.get_nonempty_indices(tiles)

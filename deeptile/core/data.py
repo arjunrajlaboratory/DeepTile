@@ -426,15 +426,27 @@ class Tiled(Data):
     @cached_property
     def tile_size(self):
 
-        """ Get tile size.
+        """ Calculate scaled tile size.
 
         Returns
         -------
             tile_size : tuple of int
-                Tile size.
+                Scaled tile size.
         """
 
-        tile_size = self[self.nonempty_indices_tuples[0]].shape[-2:]
+        profile_tile_size = self.profile.tile_size
+
+        if self.metadata['isimage']:
+            if self.metadata['stackable']:
+                tile_size = self[self.nonempty_indices_tuples[0]].shape[-2:]
+            else:
+                tile_size = profile_tile_size
+        else:
+            tile_scales = self.metadata['tile_scales']
+            if tile_scales is None:
+                tile_size = profile_tile_size
+            else:
+                tile_size = (round(profile_tile_size[0] * tile_scales[0]), round(profile_tile_size[1] * tile_scales[1]))
 
         return tile_size
 
@@ -449,25 +461,9 @@ class Tiled(Data):
                 Tile scales relative to profile tile sizes.
         """
 
-        profile = self.profile
-        profile_tile_size = profile.tile_size
-
-        if self.metadata['tile_scales'] is None:
-
-            if self.metadata['isimage']:
-
-                tile_size = self.tile_size
-                tile_scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
-
-            else:
-
-                tile_scales = (1.0, 1.0)
-
-        else:
-
-            tile_scales = self.metadata['tile_scales']
-            tile_size = (round(profile_tile_size[0] * tile_scales[0]), round(profile_tile_size[1] * tile_scales[1]))
-            tile_scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
+        profile_tile_size = self.profile.tile_size
+        tile_size = self.tile_size
+        tile_scales = (tile_size[0] / profile_tile_size[0], tile_size[1] / profile_tile_size[1])
 
         return tile_scales
 
@@ -482,7 +478,7 @@ class Tiled(Data):
                 Scaled image size.
         """
 
-        profile_image_shape = self.profile.dt.image_shape
+        profile_image_shape = self.dt.image_shape
         tile_scales = self.tile_scales
         image_size = (round(profile_image_shape[-2] * tile_scales[0]), round(profile_image_shape[-1] * tile_scales[1]))
 
