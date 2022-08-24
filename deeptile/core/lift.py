@@ -1,9 +1,9 @@
+import numpy as np
 from deeptile.core import process, trees
 from deeptile.core.data import Tiled
 from deeptile.core.iterators import Iterator
 from deeptile.core.jobs import Job
 from functools import wraps
-import numpy as np
 
 
 class Lifted:

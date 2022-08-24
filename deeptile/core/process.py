@@ -1,7 +1,7 @@
+import numpy as np
 from deeptile.core import trees, utils
 from deeptile.core.data import Output, Tiled
 from functools import partial
-import numpy as np
 
 
 def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
