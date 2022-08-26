@@ -6,7 +6,7 @@ from functools import partial
 
 def cellpose_segmentation(model_parameters, eval_parameters):
 
-    """ Generate Algorithm object for the Cellpose segmentation algorithm.
+    """ Generate lifted function for the Cellpose segmentation algorithm.
 
     Parameters
     ----------
@@ -17,8 +17,8 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
     Returns
     -------
-        func_segment : Algorithm
-            Algorithm object with Cellpose as the callable.
+        func_segment : Callable
+            Lifted function for the Cellpose segmentation algorithm.
     """
 
     from cellpose.models import Cellpose
@@ -40,7 +40,7 @@ def cellpose_segmentation(model_parameters, eval_parameters):
 
 def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
-    """ Generate Algorithm object for the DeepCell Mesmer segmentation algorithm.
+    """ Generate lifted function for the DeepCell Mesmer segmentation algorithm.
 
     Parameters
     ----------
@@ -51,8 +51,8 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
     Returns
     -------
-        func_segment : Algorithm
-            Algorithm object with DeepCell Mesmer as the callable.
+        func_segment : Callable
+            Lifted function for the DeepCell Mesmer segmentation algorithm.
     """
 
     from deepcell.applications import Mesmer
@@ -74,7 +74,7 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
 def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
-    """ Generate Algorithm object for the DeepCell Nuclear segmentation algorithm.
+    """ Generate lifted function for the DeepCell Nuclear segmentation algorithm.
 
     Parameters
     ----------
@@ -85,8 +85,8 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
     Returns
     -------
-        func_segment : Algorithm
-            Algorithm object with DeepCell Nuclear as the callable.
+        func_segment : Callable
+            Lifted function for the DeepCell Nuclear segmentation algorithm.
     """
 
     from deepcell.applications import NuclearSegmentation
@@ -107,7 +107,7 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
 def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
-    """ Generate Algorithm object for the DeepCell Cytoplasm segmentation algorithm.
+    """ Generate lifted function for the DeepCell Cytoplasm segmentation algorithm.
 
     Parameters
     ----------
@@ -118,8 +118,8 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
     Returns
     -------
-        func_segment : Algorithm
-            Algorithm object with DeepCell Cytoplasm as the callable.
+        func_segment : Callable
+            Lifted function for the DeepCell Cytoplasm segmentation algorithm.
     """
 
     from deepcell.applications import CytoplasmSegmentation
