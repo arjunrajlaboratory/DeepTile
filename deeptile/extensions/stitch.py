@@ -185,7 +185,7 @@ def stitch_coords(coords):
             Stitched coordinates.
     """
 
-    job = Job(coords, 'stitch_masks', {})
+    job = Job(coords, 'stitch_coords', {})
 
     nonempty_indices = coords.nonempty_indices_tuples
     tile_indices_iterator = coords.tile_indices_iterator
