@@ -215,9 +215,9 @@ def stitch_coords(coords):
             else:
                 coord = coords[index]
 
-            coord = coord + np.array([tile_index[0, 0], tile_index[1, 0]])
-            s = (border_index[0, 0] < coord[:, 0]) & (coord[:, 0] < border_index[0, 1]) & \
-                (border_index[1, 0] < coord[:, 1]) & (coord[:, 1] < border_index[1, 1])
+            coord[:, -2:] = coord[:, -2:] + np.array([tile_index[0, 0], tile_index[1, 0]])
+            s = (border_index[0, 0] < coord[:, -2]) & (coord[:, -2] < border_index[0, 1]) & \
+                (border_index[1, 0] < coord[:, -1]) & (coord[:, -1] < border_index[1, 1])
             batch_coords.append(coord[s])
 
         stitched_coords[n] = np.concatenate(batch_coords, axis=0)
