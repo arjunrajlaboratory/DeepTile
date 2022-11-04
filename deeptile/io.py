@@ -1,5 +1,6 @@
-import numpy as np
+from dask.array import Array
 from deeptile import deeptile
+from numpy import ndarray
 from pathlib import Path
 
 
@@ -30,9 +31,7 @@ def load(image, dask=True, link_data=True):
             If ``image`` is invalid.
     """
 
-    dt = None
-
-    if isinstance(image, np.ndarray):
+    if isinstance(image, (Array, ndarray)):
         dt = from_array(image, dask)
     elif Path(image).is_file():
         if image.endswith(('.tif', '.tiff')):
