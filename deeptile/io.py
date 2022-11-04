@@ -25,6 +25,8 @@ def load(image, dask=True, link_data=True):
     Raises
     ------
         ValueError
+            If ``image`` has an unsupported file type.
+        ValueError
             If ``image`` is invalid.
     """
 
@@ -37,6 +39,8 @@ def load(image, dask=True, link_data=True):
             dt = from_tiff(image, dask)
         elif image.endswith('.nd2'):
             dt = from_nd2(image)
+        else:
+            raise ValueError('unsupported file type.')
     else:
         raise ValueError("invalid image.")
 
