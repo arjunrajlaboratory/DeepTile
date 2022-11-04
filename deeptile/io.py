@@ -31,7 +31,10 @@ def load(image, dask=True, link_data=True):
             If ``image`` is invalid.
     """
 
-    if isinstance(image, (Array, ndarray)):
+    if isinstance(image, Array):
+        dask = True
+        dt = from_array(image, dask)
+    elif isinstance(image, ndarray):
         dt = from_array(image, dask)
     elif Path(image).is_file():
         if image.endswith(('.tif', '.tiff')):
