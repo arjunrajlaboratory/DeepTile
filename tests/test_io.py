@@ -1,10 +1,8 @@
-from deeptile import load
-
-
 def test_load_dask_array():
 
     import dask.array as da
     import numpy as np
+    from deeptile import load
 
     image = np.random.rand(10, 10)
     image = da.from_array(image)
@@ -23,6 +21,7 @@ def test_load_numpy_array():
 
     import dask.array as da
     import numpy as np
+    from deeptile import load
 
     image = np.random.rand(10, 10)
     dt = load(image, dask=True)
@@ -71,6 +70,7 @@ def test_load_nd2():
     import dask.array as da
     import nd2
     import numpy as np
+    from deeptile import load
     from pathlib import Path
 
     image = str(Path(__file__).parents[1] / 'data' / 'sample.nd2')
@@ -96,6 +96,7 @@ def test_load_tiff():
     import dask.array as da
     import numpy as np
     import tifffile
+    from deeptile import load
     from pathlib import Path
 
     image = str(Path(__file__).parents[1] / 'data' / 'sample.tif')
