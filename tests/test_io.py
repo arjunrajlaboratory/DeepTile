@@ -1,5 +1,7 @@
 def test_load_dask_array():
 
+    """ Test that DeepTile can load a Dask array. """
+
     import dask.array as da
     import numpy as np
     from deeptile import load
@@ -19,6 +21,8 @@ def test_load_dask_array():
 
 def test_load_numpy_array():
 
+    """ Test that DeepTile can load a NumPy array. """
+
     import dask.array as da
     import numpy as np
     from deeptile import load
@@ -37,6 +41,8 @@ def test_load_numpy_array():
 
 
 def test_from_large_image():
+
+    """ Test that DeepTile can load a large_image tile source. """
 
     import pytest
 
@@ -67,6 +73,8 @@ def test_from_large_image():
 
 def test_load_nd2():
 
+    """ Test that DeepTile can load an ND2 file. """
+
     import dask.array as da
     import nd2
     import numpy as np
@@ -92,6 +100,8 @@ def test_load_nd2():
 
 
 def test_load_tiff():
+
+    """ Test that DeepTile can load a TIFF file. """
 
     import dask.array as da
     import numpy as np
