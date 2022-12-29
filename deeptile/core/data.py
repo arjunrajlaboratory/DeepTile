@@ -325,14 +325,38 @@ class Tiled(Data):
                             tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
 
             if tile_padding[0] > 0:
-                for i, tile in enumerate(tiles[-1]):
-                    if tile is not None:
-                        tiles[-1, i] = utils.array_pad(tile, tile_padding[0], -2, **kwargs)
+                if tiles.shape[0] > 1:
+                    for i, (inner_tile, edge_tile) in enumerate(np.moveaxis(tiles[-2:], 1, 0)):
+                        if edge_tile is not None:
+                            if inner_tile is not None:
+                                extension = self.profile.tile_indices[0][-1, 0] - self.profile.tile_indices[0][-2, 0]
+                                extended_tile = np.concatenate((inner_tile[..., :extension, :], edge_tile), axis=-2)
+                                padded_tile = utils.array_pad(extended_tile, tile_padding[0], -2, **kwargs)
+                                padded_tile = padded_tile[..., -tile_size[0]:, :]
+                            else:
+                                padded_tile = utils.array_pad(edge_tile, tile_padding[0], -2, **kwargs)
+                            tiles[-1, i] = padded_tile
+                else:
+                    for i, tile in enumerate(tiles[-1]):
+                        if tile is not None:
+                            tiles[-1, i] = utils.array_pad(tile, tile_padding[0], -2, **kwargs)
 
             if tile_padding[1] > 0:
-                for i, tile in enumerate(tiles[:, -1]):
-                    if tile is not None:
-                        tiles[i, -1] = utils.array_pad(tile, tile_padding[1], -1, **kwargs)
+                if tiles.shape[1] > 1:
+                    for i, (inner_tile, edge_tile) in enumerate(tiles[:, -2:]):
+                        if edge_tile is not None:
+                            if inner_tile is not None:
+                                extension = self.profile.tile_indices[1][-1, 0] - self.profile.tile_indices[1][-2, 0]
+                                extended_tile = np.concatenate((inner_tile[..., :extension], edge_tile), axis=-1)
+                                padded_tile = utils.array_pad(extended_tile, tile_padding[1], -1, **kwargs)
+                                padded_tile = padded_tile[..., -tile_size[1]:]
+                            else:
+                                padded_tile = utils.array_pad(edge_tile, tile_padding[0], -1, **kwargs)
+                            tiles[i, -1] = padded_tile
+                else:
+                    for i, tile in enumerate(tiles[:, -1]):
+                        if tile is not None:
+                            tiles[i, -1] = utils.array_pad(tile, tile_padding[1], -1, **kwargs)
 
             job = Job(self, 'pad_tiles', kwargs)
 
