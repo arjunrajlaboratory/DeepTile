@@ -313,7 +313,18 @@ class Tiled(Data):
         -------
             tiles : Tiled
                 Array of tiles.
-        """
+
+        Raises
+        ------
+        NotImplementedError
+            If padding ``mode`` is not supported.
+    """
+
+        mode = kwargs.get('mode', 'constant')
+
+        if mode not in ['constant', 'edge', 'linear_ramp', 'reflect', 'symmetric']:
+
+            raise NotImplementedError('Padding mode is not supported.')
 
         if self.metadata['isimage'] and not self.metadata['stackable']:
 
@@ -325,7 +336,7 @@ class Tiled(Data):
                             tile_size[1] - (tile_indices[1][-1, 1] - tile_indices[1][-1, 0]))
 
             if tile_padding[0] > 0:
-                if tiles.shape[0] > 1:
+                if (mode in ['reflect', 'symmetric']) and (tiles.shape[0] > 1):
                     for i, (inner_tile, edge_tile) in enumerate(np.moveaxis(tiles[-2:], 1, 0)):
                         if edge_tile is not None:
                             if inner_tile is not None:
@@ -342,7 +353,7 @@ class Tiled(Data):
                             tiles[-1, i] = utils.array_pad(tile, tile_padding[0], -2, **kwargs)
 
             if tile_padding[1] > 0:
-                if tiles.shape[1] > 1:
+                if (mode in ['reflect', 'symmetric']) and (tiles.shape[1] > 1):
                     for i, (inner_tile, edge_tile) in enumerate(tiles[:, -2:]):
                         if edge_tile is not None:
                             if inner_tile is not None:
