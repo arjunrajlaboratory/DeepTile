@@ -76,6 +76,59 @@ class DeepTileArray(DeepTile):
         return tiles
 
 
+class DeepTileFunction(DeepTile):
+
+    """ DeepTile subclass for functions.
+
+    Parameters
+    ----------
+        image : Callable
+            A function for obtaining image regions.
+        image_shape : tuple
+            Shape of the image.
+    """
+
+    def __init__(self, image, image_shape):
+
+        super().__init__(image)
+        self.image_type = 'function'
+        self.image_shape = image_shape
+
+    def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None), )):
+
+        """ Obtain tiles from function calls.
+
+        Parameters
+        ----------
+            tile_size : tuple
+                Size of each tile.
+            overlap : tuple, optional, default (0.1, 0.1)
+                Fractions of ``tile_size`` to use for overlap.
+            slices : optional, default (slice(None))
+                Tuple of slice objects designating slices to be extracted.
+
+        Returns
+        -------
+            tiles : Tiled
+                Array of tiles.
+        """
+
+        job_locals = locals()
+        job_locals.pop('self')
+
+        from deeptile.sources import function
+
+        tiling, tile_indices, border_indices = utils.calculate_indices(self.image_shape, tile_size, overlap)
+        tiles = function.parse(self.image, self.image_shape, tiling, tile_indices, slices)
+        nonempty_indices = utils.get_nonempty_indices(tiles)
+
+        profile = Profile(self, tiling, tile_size, overlap, slices, nonempty_indices, tile_indices, border_indices)
+        job = Job(self.image, 'get_tiles', job_locals, profile)
+        tiles = Tiled(tiles, job, stackable=False, tile_scales=(1.0, 1.0))
+
+        return tiles
+
+
 class DeepTileLargeImage(DeepTile):
 
     """ DeepTile subclass for large_image tile sources.

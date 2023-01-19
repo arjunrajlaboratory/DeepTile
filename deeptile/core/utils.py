@@ -19,6 +19,25 @@ def compute_dask(obj):
     return obj
 
 
+def calculate_sliced_shape(shape, slices):
+
+    sliced_shape = list(shape)
+
+    for i, s in enumerate(slices):
+
+        if isinstance(s, int):
+            s = slice(s, s + 1)
+        elif s is None:
+            s = slice(None)
+
+        start, stop, step = s.indices(sliced_shape[i])
+        sliced_shape[i] = len(range(start, stop, step))
+
+    sliced_shape = tuple(sliced_shape)
+
+    return sliced_shape
+
+
 def calculate_tiling(axis_size, tile_size, overlap_size):
 
     tiling = (axis_size - overlap_size) / (tile_size - overlap_size)
