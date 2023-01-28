@@ -55,6 +55,26 @@ class Lifted:
                 Tiles processed by lifted function.
         """
 
+        processed_tiles, variables = self.init(*args, **kwargs)
+
+        n_steps = variables['n_steps']
+        for _ in range(n_steps):
+            processed_tiles, variables = self.apply(processed_tiles, variables)
+
+        return processed_tiles
+
+    def init(self, *args, **kwargs):
+
+        """ Initialize a lifted job.
+
+        Returns
+        -------
+            processed_tiles
+                Tiles processed by lifted function.
+            variables : dict
+                Dictionary of variables used in the lifted job.
+        """
+
         job_locals = locals()
 
         arg_indices = [arg_index for arg_index in trees.tree_scan(args)[2]
@@ -84,14 +104,66 @@ class Lifted:
             nonempty_indices = tuple(nonempty_indices)
 
         if self.vectorized:
+            n_steps = np.ceil(len(nonempty_indices[0]) / self.batch_size).astype(int)
+        else:
+            n_steps = len(nonempty_indices[0])
 
-            n_batches = np.ceil(len(nonempty_indices[0]) / self.batch_size).astype(int)
+        step = 0
 
-            for batch in range(n_batches):
+        variables = {
+            'args': args,
+            'kwargs': kwargs,
+            'arg_indices': arg_indices,
+            'kwarg_indices': kwarg_indices,
+            'job': job,
+            'reference': reference,
+            'nonempty_indices': nonempty_indices,
+            'processed_istree': processed_istree,
+            'processed_indices': processed_indices,
+            'n_steps': n_steps,
+            'step': step
+        }
 
-                batch_offset = batch * self.batch_size
-                batch_indices = tuple(indices[batch_offset:batch_offset + self.batch_size]
-                                      for indices in nonempty_indices)
+        return processed_tiles, variables
+
+    def apply(self, processed_tiles, variables):
+
+        """ Take one step in a lifted job.
+
+        Parameters
+        ----------
+            processed_tiles
+                Tiles processed by lifted function.
+            variables : dict
+                Dictionary of variables used in the lifted job.
+
+        Returns
+        -------
+            processed_tiles
+                Tiles processed by lifted function.
+            variables : dict
+                Dictionary of variables used in the lifted job.
+        """
+
+        n_steps = variables['n_steps']
+        step = variables['step']
+
+        if step < n_steps:
+
+            args = variables['args']
+            kwargs = variables['kwargs']
+            arg_indices = variables['arg_indices']
+            kwarg_indices = variables['kwarg_indices']
+            job = variables['job']
+            reference = variables['reference']
+            nonempty_indices = variables['nonempty_indices']
+            processed_istree = variables['processed_istree']
+            processed_indices = variables['processed_indices']
+
+            if self.vectorized:
+
+                batch_offset = step * self.batch_size
+                batch_indices = tuple(i[batch_offset:batch_offset + self.batch_size] for i in nonempty_indices)
 
                 processed_istree, processed_indices, processed_tiles = \
                     process.process_vectorized(self.func, self.batch_axis, self.pad_final_batch, self.batch_size,
@@ -99,17 +171,20 @@ class Lifted:
                                                job, reference, processed_istree, processed_indices, processed_tiles,
                                                batch_indices)
 
-        else:
+            else:
 
-            for index in zip(*nonempty_indices):
-
+                index = tuple(i[step] for i in nonempty_indices)
                 processed_istree, processed_indices, processed_tiles = \
                     process.process_single(self.func, self.batch_axis,
                                            args, kwargs, arg_indices, kwarg_indices,
                                            job, reference, processed_istree, processed_indices, processed_tiles,
                                            index)
 
-        return processed_tiles
+            variables['processed_istree'] = processed_istree
+            variables['processed_indices'] = processed_indices
+            variables['step'] = step + 1
+
+        return processed_tiles, variables
 
 
 def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_size=4):
