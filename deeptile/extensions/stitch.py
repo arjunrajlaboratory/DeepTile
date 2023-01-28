@@ -208,7 +208,7 @@ def stitch_coords(coords):
         for index in nonempty_indices:
 
             tile_index = tile_indices_iterator[index]
-            border_index = border_indices_iterator[index]
+            border_index = border_indices_iterator[index] - 0.5
 
             if batch_axis:
                 coord = coords[index][n].copy()
