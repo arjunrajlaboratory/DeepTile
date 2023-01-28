@@ -186,7 +186,7 @@ class DeepTileND2(DeepTile):
 
     Parameters
     ----------
-        image : ND2 file
+        image : str
             An ND2 file.
     """
 

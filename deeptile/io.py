@@ -112,7 +112,7 @@ def from_nd2(image):
     """
 
     from deeptile.sources import nd2
-    image, image_sizes, axes_order = nd2.read(image)
+    image_sizes, axes_order = nd2.read(image)
     dt = deeptile.DeepTileND2(image)
     dt.axis_sizes = image_sizes
     dt.axis_order = axes_order

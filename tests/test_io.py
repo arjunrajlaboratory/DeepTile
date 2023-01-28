@@ -82,20 +82,24 @@ def test_load_nd2():
     from pathlib import Path
 
     image = str(Path(__file__).parents[1] / 'data' / 'sample.nd2')
-    ground_truth = nd2.ND2File(image)
+    ground_truth = nd2.imread(image, dask=True)
 
     dt = load(image, dask=True)
-    tiles = dt.get_tiles(ground_truth.shape[-2:])
+    tiles = dt.get_tiles()
 
     assert dt.dask is True
-    assert dt.image.path == ground_truth.path
+    assert dt.image == image
+    assert np.all(tiles[0, 0] == ground_truth[-1]).compute()
+    assert np.all(tiles[-1, -1] == ground_truth[0]).compute()
     assert isinstance(tiles[tiles.nonempty_indices_tuples[0]], da.Array)
 
     dt_no_dask = load(image, dask=False)
-    tiles_no_dask = dt_no_dask.get_tiles(ground_truth.shape[-2:])
+    tiles_no_dask = dt_no_dask.get_tiles()
 
     assert dt_no_dask.dask is False
-    assert dt_no_dask.image.path == ground_truth.path
+    assert dt_no_dask.image == image
+    assert np.all(tiles_no_dask[0, 0] == ground_truth[-1]).compute()
+    assert np.all(tiles_no_dask[-1, -1] == ground_truth[0]).compute()
     assert isinstance(tiles_no_dask[tiles_no_dask.nonempty_indices_tuples[0]], np.ndarray)
 
 
