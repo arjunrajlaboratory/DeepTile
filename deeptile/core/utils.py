@@ -176,8 +176,8 @@ def tile_coords(tile, coords):
 
         coord = coords[n]
 
-        s = (tile_index[0, 0] < coord[:, 0]) & (coord[:, 0] < tile_index[0, 1]) & \
-            (tile_index[1, 0] < coord[:, 1]) & (coord[:, 1] < tile_index[1, 1])
+        s = (tile_index[0, 0] - 0.5 < coord[:, 0]) & (coord[:, 0] < tile_index[0, 1] - 0.5) & \
+            (tile_index[1, 0] - 0.5 < coord[:, 1]) & (coord[:, 1] < tile_index[1, 1] - 0.5)
         tiled_coords[n] = coord[s] - tile_index[:, 0]
 
     if not batch_axis:
