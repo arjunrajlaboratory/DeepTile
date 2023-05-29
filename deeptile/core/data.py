@@ -322,7 +322,10 @@ class Tiled(Data):
 
         mode = kwargs.get('mode', 'constant')
 
-        if mode not in ['constant', 'edge', 'linear_ramp', 'reflect', 'symmetric']:
+        if mode not in ['constant', 'edge', 'linear_ramp',
+                        'maximum', 'mean', 'median', 'minimum',
+                        'tile_maximum', 'tile_mean', 'tile_median', 'tile_minimum',
+                        'reflect', 'symmetric']:
 
             raise NotImplementedError('Padding mode is not supported.')
 
@@ -347,6 +350,20 @@ class Tiled(Data):
                             else:
                                 padded_tile = utils.array_pad(edge_tile, tile_padding[0], -2, **kwargs)
                             tiles[-1, i] = padded_tile
+                elif mode in ['tile_maximum', 'tile_mean', 'tile_median', 'tile_minimum']:
+                    for i, tile in enumerate(tiles[-1]):
+                        if tile is not None:
+                            constant = None
+                            if mode == 'tile_maximum':
+                                constant = np.max(tile)
+                            elif mode == 'tile_mean':
+                                constant = np.mean(tile)
+                            elif mode == 'tile_median':
+                                constant = np.median(tile)
+                            elif mode == 'tile_minimum':
+                                constant = np.min(tile)
+                            tiles[-1, i] = \
+                                utils.array_pad(tile, tile_padding[0], -2, mode='constant', constant_values=constant)
                 else:
                     for i, tile in enumerate(tiles[-1]):
                         if tile is not None:
@@ -364,6 +381,20 @@ class Tiled(Data):
                             else:
                                 padded_tile = utils.array_pad(edge_tile, tile_padding[0], -1, **kwargs)
                             tiles[i, -1] = padded_tile
+                elif mode in ['tile_maximum', 'tile_mean', 'tile_median', 'tile_minimum']:
+                    for i, tile in enumerate(tiles[:, -1]):
+                        if tile is not None:
+                            constant = None
+                            if mode == 'tile_maximum':
+                                constant = np.max(tile)
+                            elif mode == 'tile_mean':
+                                constant = np.mean(tile)
+                            elif mode == 'tile_median':
+                                constant = np.median(tile)
+                            elif mode == 'tile_minimum':
+                                constant = np.min(tile)
+                            tiles[i, -1] = \
+                                utils.array_pad(tile, tile_padding[1], -1, mode='constant', constant_values=constant)
                 else:
                     for i, tile in enumerate(tiles[:, -1]):
                         if tile is not None:
