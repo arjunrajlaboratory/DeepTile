@@ -1,6 +1,8 @@
 import numpy as np
 from deeptile.core.data import Stitched
 from deeptile.core.jobs import Job
+from rtree import index
+from shapely.geometry import Polygon
 from skimage import measure
 
 
@@ -76,6 +78,46 @@ def stitch_image(tiles, blend=True, sigma=10):
     stitched = Stitched(stitched, job)
 
     return stitched
+
+
+def stitch_polygons(polygons, iou_threshold=0.1):
+
+    job_locals = locals()
+    job_locals.pop('polygons')
+
+    job = Job(polygons, 'stitch_polygons', job_locals)
+
+    valid_polygons = polygons.s[0]
+    border_polygons = polygons.s[1]
+    tiling = polygons.profile.tiling
+    stitched_polygons_list = [polygon for tile in valid_polygons[valid_polygons.nonempty_indices] for polygon in tile]
+
+    for i in range(tiling[0] - 1):
+        for j in range(tiling[1]):
+            border_u = border_polygons[i, j][0][i]
+            border_b = border_polygons[i + 1, j][0][i]
+
+            if j < tiling[1] - 1:
+                border_ur = border_polygons[i, j + 1][0][i]
+                border_br = border_polygons[i + 1, j + 1][0][i]
+                border_u = _overlapping_polygons_rtree(border_ur, border_u, 0.5)
+                border_b = _overlapping_polygons_rtree(border_br, border_b, 0.5)
+
+            border_b = _overlapping_polygons_rtree(border_u, border_b, 0.5)
+            stitched_polygons_list = stitched_polygons_list + border_u + border_b
+
+    for j in range(tiling[1] - 1):
+        for i in range(tiling[0]):
+            border_l = border_polygons[i, j][1][j]
+            border_r = border_polygons[i, j + 1][1][j]
+            border_r = _overlapping_polygons_rtree(border_l, border_r, 0.5)
+            stitched_polygons_list = stitched_polygons_list + border_l + border_r
+
+    stitched_polygons = np.empty(len(stitched_polygons_list), dtype=object)
+    stitched_polygons[:] = stitched_polygons_list
+    stitched_polygons = Stitched(stitched_polygons, job)
+
+    return stitched_polygons
 
 
 def stitch_masks(masks, iou_threshold=0.1):
@@ -257,6 +299,38 @@ def _generate_taper(tile_size, overlap, sigma):
     taper = tapery[:, None] * taperx
 
     return taper
+
+
+def _overlapping_polygons_rtree(polygons1, polygons2, iou_threshold=0.1):
+
+    # Initialize an empty R-tree index
+    idx = index.Index()
+
+    # Populate R-tree index with each polygon's bounding box in polygons1
+    for pos, poly in enumerate(polygons1):
+        poly = Polygon(poly)
+        idx.insert(pos, poly.bounds)
+
+    # Check for overlapping polygons in polygons2 with polygons1 using R-tree index
+    to_remove = set()
+    for i in range(len(polygons2)):
+        # Iterate over polygons within the bounding box of the current polygon
+        poly2 = Polygon(polygons2[i])
+        for j in idx.intersection(poly2.bounds):
+            # If polygons overlap and IoU > threshold, mark one for removal
+            poly1 = Polygon(polygons1[j])
+            if poly2.intersects(poly1):
+                intersection_area = poly1.intersection(poly2).area
+                union_area = poly1.union(poly2).area
+                iou = intersection_area / union_area
+                if iou > iou_threshold:
+                    to_remove.add(i)
+                    break  # No need to check further for this polygon in polygons2
+
+    # Create the final lists of polygons after removing the unwanted ones from polygons2
+    polygons2 = [polygons2[i] for i in range(len(polygons2)) if i not in to_remove]
+
+    return polygons2
 
 
 def _calculate_iou_score(a, b):
