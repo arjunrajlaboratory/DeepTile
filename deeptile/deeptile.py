@@ -6,12 +6,12 @@ from deeptile.core.profiles import Profile
 
 class DeepTile:
 
-    """ Base DeepTile class.
+    """Base DeepTile class.
 
     Parameters
     ----------
-        image
-            An object containing an image.
+    image
+        An object containing an image.
     """
 
     def __init__(self, image):
@@ -26,12 +26,12 @@ class DeepTile:
 
 class DeepTileArray(DeepTile):
 
-    """ DeepTile subclass for arrays.
+    """DeepTile subclass for arrays.
 
     Parameters
     ----------
-        image : array_like
-            An array-like object of an image.
+    image : array_like
+        An array-like object of an image.
     """
 
     def __init__(self, image):
@@ -41,21 +41,21 @@ class DeepTileArray(DeepTile):
 
     def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None), )):
 
-        """ Split array into tiles.
+        """Split array into tiles.
 
         Parameters
         ----------
-            tile_size : tuple
-                Size of each tile.
-            overlap : tuple, optional, default (0.1, 0.1)
-                Fractions of ``tile_size`` to use for overlap.
-            slices : optional, default (slice(None))
-                Tuple of slice objects designating slices to be extracted.
+        tile_size : tuple
+            Size of each tile.
+        overlap : tuple, optional, default (0.1, 0.1)
+            Fractions of ``tile_size`` to use for overlap.
+        slices : optional, default (slice(None))
+            Tuple of slice objects designating slices to be extracted.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         job_locals = locals()
@@ -78,14 +78,14 @@ class DeepTileArray(DeepTile):
 
 class DeepTileFunction(DeepTile):
 
-    """ DeepTile subclass for functions.
+    """DeepTile subclass for functions.
 
     Parameters
     ----------
-        image : Callable
-            A function for obtaining image regions.
-        image_shape : tuple
-            Shape of the image.
+    image : Callable
+        A function for obtaining image regions.
+    image_shape : tuple
+        Shape of the image.
     """
 
     def __init__(self, image, image_shape):
@@ -96,21 +96,21 @@ class DeepTileFunction(DeepTile):
 
     def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=(slice(None), )):
 
-        """ Obtain tiles from function calls.
+        """Obtain tiles from function calls.
 
         Parameters
         ----------
-            tile_size : tuple
-                Size of each tile.
-            overlap : tuple, optional, default (0.1, 0.1)
-                Fractions of ``tile_size`` to use for overlap.
-            slices : optional, default (slice(None))
-                Tuple of slice objects designating slices to be extracted.
+        tile_size : tuple
+            Size of each tile.
+        overlap : tuple, optional, default (0.1, 0.1)
+            Fractions of ``tile_size`` to use for overlap.
+        slices : optional, default (slice(None))
+            Tuple of slice objects designating slices to be extracted.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         job_locals = locals()
@@ -131,12 +131,12 @@ class DeepTileFunction(DeepTile):
 
 class DeepTileLargeImage(DeepTile):
 
-    """ DeepTile subclass for large_image tile sources.
+    """DeepTile subclass for large_image tile sources.
 
     Parameters
     ----------
-        image : large_image tile source
-            A large_image tile source.
+    image : large_image tile source
+        A large_image tile source.
     """
 
     def __init__(self, image):
@@ -146,21 +146,21 @@ class DeepTileLargeImage(DeepTile):
 
     def get_tiles(self, tile_size, overlap=(0.1, 0.1), slices=0):
 
-        """ Obtain tiles from large_image tile source.
+        """Obtain tiles from large_image tile source.
 
         Parameters
         ----------
-            tile_size : tuple
-                Size of each tile.
-            overlap : tuple, optional, default (0.1, 0.1)
-                Fractions of ``tile_size`` to use for overlap.
-            slices : int, optional, default 0
-                Frame index designating frame to be extracted.
+        tile_size : tuple
+            Size of each tile.
+        overlap : tuple, optional, default (0.1, 0.1)
+            Fractions of ``tile_size`` to use for overlap.
+        slices : int, optional, default 0
+            Frame index designating frame to be extracted.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         job_locals = locals()
@@ -182,12 +182,12 @@ class DeepTileLargeImage(DeepTile):
 
 class DeepTileND2(DeepTile):
 
-    """ DeepTile subclass for ND2 files.
+    """DeepTile subclass for ND2 files.
 
     Parameters
     ----------
-        image : str
-            An ND2 file.
+    image : str
+        An ND2 file.
     """
 
     def __init__(self, image):
@@ -199,19 +199,19 @@ class DeepTileND2(DeepTile):
 
     def get_tiles(self, overlap=(0.1, 0.1), slices=(slice(None))):
 
-        """ Obtain tiles from ND2 file.
+        """Obtain tiles from ND2 file.
 
         Parameters
         ----------
-            overlap : tuple or None, optional, default (0.1, 0.1)
-                Fractions to use for overlap. If ``None``, overlap is automatically determined from the ND2 metadata.
-            slices : optional, default (slice(None))
-                Tuple of slice objects designating slices to be extracted.
+        overlap : tuple or None, optional, default (0.1, 0.1)
+            Fractions to use for overlap. If ``None``, overlap is automatically determined from the ND2 metadata.
+        slices : optional, default (slice(None))
+            Tuple of slice objects designating slices to be extracted.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         job_locals = locals()

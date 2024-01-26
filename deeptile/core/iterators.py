@@ -3,12 +3,12 @@ import numpy as np
 
 class Iterator:
 
-    """ Base Iterator class that mimics the indexing behavior of numpy.ndarray.
+    """Base Iterator class that mimics the indexing behavior of numpy.ndarray.
 
     Parameters
     ----------
-        tiles : Tiled
-            Array of tiles.
+    tiles : Tiled
+        Array of tiles.
     """
 
     def __init__(self, tiles):
@@ -27,17 +27,17 @@ class Iterator:
 
     def __getitem__(self, index):
 
-        """ Placeholder __getitem__ method.
+        """Placeholder __getitem__ method.
 
         Parameters
         ----------
-            index : tuple of int
-                Array index.
+        index : tuple of int
+            Array index.
 
         Raises
         ------
-            NotImplementedError
-                If no __getitem__ method has been set.
+        NotImplementedError
+            If no __getitem__ method has been set.
         """
 
         raise NotImplementedError("no __getitem__ method has been set.")
@@ -45,22 +45,21 @@ class Iterator:
 
 class IndexIterator(Iterator):
 
-    """ Iterator subclass for array indices.
-    """
+    """Iterator subclass for array indices."""
 
     def __getitem__(self, index):
 
-        """ Get array index.
+        """Get array index.
 
         Parameters
         ----------
-            index : tuple of int
-                Array index.
+        index : tuple of int
+            Array index.
 
         Returns
         -------
-            index : tuple of int
-                Array index.
+        index : tuple of int
+            Array index.
         """
 
         return index
@@ -68,22 +67,21 @@ class IndexIterator(Iterator):
 
 class TileIndicesIterator(Iterator):
 
-    """ Iterator subclass for tile indices.
-    """
+    """Iterator subclass for tile indices."""
 
     def __getitem__(self, index):
 
-        """ Get tile index.
+        """Get tile index.
 
         Parameters
         ----------
-            index : tuple of int
-                Array index.
+        index : tuple of int
+            Array index.
 
         Returns
         -------
-            tile_index : numpy.ndarray
-                Tile index.
+        tile_index : numpy.ndarray
+            Tile index.
         """
 
         i, j = index
@@ -96,22 +94,21 @@ class TileIndicesIterator(Iterator):
 
 class BorderIndicesIterator(Iterator):
 
-    """ Iterator subclass for border indices.
-    """
+    """Iterator subclass for border indices."""
 
     def __getitem__(self, index):
 
-        """ Get border index.
+        """Get border index.
 
         Parameters
         ----------
-            index : tuple of int
-                Array index.
+        index : tuple of int
+            Array index.
 
         Returns
         -------
-            border_index : numpy.ndarray
-                Border index.
+        border_index : numpy.ndarray
+            Border index.
         """
 
         i, j = index
@@ -124,22 +121,21 @@ class BorderIndicesIterator(Iterator):
 
 class StitchIndicesIterator(Iterator):
 
-    """ Iterator subclass for stitch indices.
-    """
+    """Iterator subclass for stitch indices."""
 
     def __getitem__(self, index):
 
-        """ Get stitch index.
+        """Get stitch index.
 
         Parameters
         ----------
-            index : tuple of int
-                Array index.
+        index : tuple of int
+            Array index.
 
         Returns
         -------
-            stitch_index : tuple of int
-                Stitch index.
+        stitch_index : tuple of int
+            Stitch index.
         """
 
         tile_indices_iterator = self.tiles.tile_indices_iterator

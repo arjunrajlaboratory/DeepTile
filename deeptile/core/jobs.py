@@ -3,18 +3,18 @@ import gc
 
 class Job:
 
-    """ Job class that stores jobs created by a DeepTile object.
+    """Job class that stores jobs created by a DeepTile object.
 
     Parameters
     ----------
-        job_input
-            Input data for the job.
-        job_type : str
-            Type of job.
-        job_locals : dict
-            Job local arguments.
-        profile : Profile
-            New tiling profile used when ``job_input`` is a tile source.
+    job_input
+        Input data for the job.
+    job_type : str
+        Type of job.
+    job_locals : dict
+        Job local arguments.
+    profile : Profile
+        New tiling profile used when ``job_input`` is a tile source.
     """
 
     def __init__(self, job_input, job_type, job_locals, profile=None):

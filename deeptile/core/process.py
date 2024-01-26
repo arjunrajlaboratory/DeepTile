@@ -9,48 +9,48 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
                        job, reference, processed_istree, processed_indices, processed_tiles,
                        batch_indices):
 
-    """ Process tiles using a vectorized function.
+    """Process tiles using a vectorized function.
 
     Parameters
     ----------
-        func : Callable
-            Callable for use in tile processing.
-        batch_axis : bool
-            Whether to use the first axis to create batches.
-        pad_final_batch : bool
-            Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
-            batching, this value is ignored.
-        batch_size : int
-            Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
-        args : tuple
-            Arguments for ``func``.
-        kwargs : dict
-            Keyword arguments for ``func``.
-        arg_indices : list of tuple
-            Leaf indices for ``args``.
-        kwarg_indices : list of tuple
-            Leaf indices for ``kwargs``.
-        job : Job
-            Job associated with this processing step.
-        reference : Tiled
-            Reference array of tiles.
-        processed_istree : bool
-            Whether ``processed_tiles`` is a tree.
-        processed_indices : list of tuple
-            Leaf indices for ``processed_tiles``.
-        processed_tiles
-            Tiles processed with ``func``.
-        batch_indices : tuple of numpy.ndarray
-            Batch indices of tiles.
+    func : Callable
+        Callable for use in tile processing.
+    batch_axis : bool
+        Whether to use the first axis to create batches.
+    pad_final_batch : bool
+        Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support batching,
+        this value is ignored.
+    batch_size : int
+        Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
+    args : tuple
+        Arguments for ``func``.
+    kwargs : dict
+        Keyword arguments for ``func``.
+    arg_indices : list of tuple
+        Leaf indices for ``args``.
+    kwarg_indices : list of tuple
+        Leaf indices for ``kwargs``.
+    job : Job
+        Job associated with this processing step.
+    reference : Tiled
+        Reference array of tiles.
+    processed_istree : bool
+        Whether ``processed_tiles`` is a tree.
+    processed_indices : list of tuple
+        Leaf indices for ``processed_tiles``.
+    processed_tiles
+        Tiles processed with ``func``.
+    batch_indices : tuple of numpy.ndarray
+        Batch indices of tiles.
 
     Returns
     -------
-        processed_istree : bool
-            Whether ``processed_tiles`` is a tree.
-        processed_indices : list of tuple
-            Leaf indices for ``processed_tiles``.
-        processed_tiles
-            Tiles processed with ``func``.
+    processed_istree : bool
+        Whether ``processed_tiles`` is a tree.
+    processed_indices : list of tuple
+        Leaf indices for ``processed_tiles``.
+    processed_tiles
+        Tiles processed with ``func``.
     """
 
     batch_args, batch_kwargs = get_arguments(pad_final_batch, batch_size,
@@ -82,43 +82,43 @@ def process_single(func, batch_axis,
                    job, reference, processed_istree, processed_indices, processed_tiles,
                    index):
 
-    """ Process tiles using a function.
+    """Process tiles using a function.
 
     Parameters
     ----------
-        func : Callable
-            Callable for use in tile processing.
-        batch_axis : bool
-            Whether to use the first axis to create batches.
-        args : tuple
-            Arguments for ``func``.
-        kwargs : dict
-            Keyword arguments for ``func``.
-        arg_indices : list of tuple
-            Leaf indices for ``args``.
-        kwarg_indices : list of tuple
-            Leaf indices for ``kwargs``.
-        job : Job
-            Job associated with this processing step.
-        reference : Tiled
-            Reference array of tiles.
-        processed_istree : bool
-            Whether ``processed_tiles`` is a tree.
-        processed_indices : list of tuple
-            Leaf indices for ``processed_tiles``.
-        processed_tiles
-            Tiles processed with ``func``.
-        index : tuple of int
-            Index of a tile.
+    func : Callable
+        Callable for use in tile processing.
+    batch_axis : bool
+        Whether to use the first axis to create batches.
+    args : tuple
+        Arguments for ``func``.
+    kwargs : dict
+        Keyword arguments for ``func``.
+    arg_indices : list of tuple
+        Leaf indices for ``args``.
+    kwarg_indices : list of tuple
+        Leaf indices for ``kwargs``.
+    job : Job
+        Job associated with this processing step.
+    reference : Tiled
+        Reference array of tiles.
+    processed_istree : bool
+        Whether ``processed_tiles`` is a tree.
+    processed_indices : list of tuple
+        Leaf indices for ``processed_tiles``.
+    processed_tiles
+        Tiles processed with ``func``.
+    index : tuple of int
+        Index of a tile.
 
     Returns
     -------
-        processed_istree : bool
-            Whether ``processed_tiles`` is a tree.
-        processed_indices : list of tuple
-            Leaf indices for ``processed_tiles``.
-        processed_tiles
-            Tiles processed with ``func``.
+    processed_istree : bool
+        Whether ``processed_tiles`` is a tree.
+    processed_indices : list of tuple
+        Leaf indices for ``processed_tiles``.
+    processed_tiles
+        Tiles processed with ``func``.
     """
 
     single_args, single_kwargs = get_arguments(False, 1, args, kwargs, arg_indices, kwarg_indices, index)
@@ -142,32 +142,32 @@ def process_single(func, batch_axis,
 
 def get_arguments(pad_final_batch, batch_size, args, kwargs, arg_indices, kwarg_indices, batch_indices):
 
-    """ Replace Tiled arguments with a single tile or batch of tiles.
+    """Replace Tiled arguments with a single tile or batch of tiles.
 
     Parameters
     ----------
-        pad_final_batch : bool
-            Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
-            batching, this value is ignored.
-        batch_size : int
-            Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
-        args : tuple
-            Arguments for ``func``.
-        kwargs : dict
-            Keyword arguments for ``func``.
-        arg_indices : list of tuple
-            Leaf indices for ``args``.
-        kwarg_indices : list of tuple
-            Leaf indices for ``kwargs``.
-        batch_indices : tuple of numpy.ndarray
-            Batch indices of tiles.
+    pad_final_batch : bool
+        Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support batching,
+        this value is ignored.
+    batch_size : int
+        Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
+    args : tuple
+        Arguments for ``func``.
+    kwargs : dict
+        Keyword arguments for ``func``.
+    arg_indices : list of tuple
+        Leaf indices for ``args``.
+    kwarg_indices : list of tuple
+        Leaf indices for ``kwargs``.
+    batch_indices : tuple of numpy.ndarray
+        Batch indices of tiles.
 
     Returns
     -------
-        args : tuple
-            Arguments for ``func`` with Tiled objects replaced.
-        kwargs : dict
-            Keyword arguments for ``func`` with Tiled objects replaced.
+    args : tuple
+        Arguments for ``func`` with Tiled objects replaced.
+    kwargs : dict
+        Keyword arguments for ``func`` with Tiled objects replaced.
     """
 
     partial_create_batch = partial(create_batch,
@@ -180,24 +180,24 @@ def get_arguments(pad_final_batch, batch_size, args, kwargs, arg_indices, kwarg_
 
 def create_batch(tiles, pad_final_batch, batch_size, batch_indices):
 
-    """ Create a batch of tiles from a Tiled object.
+    """Create a batch of tiles from a Tiled object.
 
     Parameters
     ----------
-        tiles : Tiled
-            Array of tiles.
-        pad_final_batch : bool
-            Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
-            batching, this value is ignored.
-        batch_size : int
-            Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
-        batch_indices : tuple of numpy.ndarray
-            Batch indices of tiles.
+    tiles : Tiled
+        Array of tiles.
+    pad_final_batch : bool
+        Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support batching,
+        this value is ignored.
+    batch_size : int
+        Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
+    batch_indices : tuple of numpy.ndarray
+        Batch indices of tiles.
 
     Returns
     -------
-        batch_tiles
-            Batch of tiles.
+    batch_tiles
+        Batch of tiles.
     """
 
     if len(batch_indices) == 2:
@@ -221,31 +221,31 @@ def create_batch(tiles, pad_final_batch, batch_size, batch_indices):
 
 def initialize_tree(processed_tile, job, reference, processed_istree, processed_indices, processed_tiles):
 
-    """ Initialize a tree of Tiled objects.
+    """Initialize a tree of Tiled objects.
 
     Parameters
     ----------
-        processed_tile
-            Processed tile.
-        job : Job
-            Job associated with this processing step.
-        reference : Tiled
-            Reference array of tiles.
-        processed_istree : bool
-            Whether ``processed_tiles`` is a tree.
-        processed_indices : list of tuple
-            Leaf indices for ``processed_tiles``.
-        processed_tiles
-            Tiles processed with ``func``.
+    processed_tile
+        Processed tile.
+    job : Job
+        Job associated with this processing step.
+    reference : Tiled
+        Reference array of tiles.
+    processed_istree : bool
+        Whether ``processed_tiles`` is a tree.
+    processed_indices : list of tuple
+        Leaf indices for ``processed_tiles``.
+    processed_tiles
+        Tiles processed with ``func``.
 
     Returns
     -------
-        processed_istree : bool
-            Whether ``processed_tiles`` is a tree.
-        processed_indices : list of tuple
-            Leaf indices for ``processed_tiles``.
-        processed_tiles
-            Tiles processed with ``func``.
+    processed_istree : bool
+        Whether ``processed_tiles`` is a tree.
+    processed_indices : list of tuple
+        Leaf indices for ``processed_tiles``.
+    processed_tiles
+        Tiles processed with ``func``.
     """
 
     if processed_istree is None:
@@ -258,21 +258,21 @@ def initialize_tree(processed_tile, job, reference, processed_istree, processed_
 
 def initialize_tiles(processed_tile, job, reference):
 
-    """ Initialize a Tiled object.
+    """Initialize a Tiled object.
 
     Parameters
     ----------
-        processed_tile
-            Processed tile.
-        job : Job
-            Job associated with this processing step.
-        reference : Tiled
-            Reference array of tiles.
+    processed_tile
+        Processed tile.
+    job : Job
+        Job associated with this processing step.
+    reference : Tiled
+        Reference array of tiles.
 
     Returns
     -------
-        processed_tiles : Tiled
-            Array of tiles.
+    processed_tiles : Tiled
+        Array of tiles.
     """
 
     processed_tiles = np.empty(reference.profile.tiling, dtype=object)
@@ -292,17 +292,17 @@ def initialize_tiles(processed_tile, job, reference):
 
 def strip_output_wrapper(processed_tile):
 
-    """ Strip Output wrapper from a processed tile.
+    """Strip Output wrapper from a processed tile.
 
     Parameters
     ----------
-        processed_tile
-            Processed tile.
+    processed_tile
+        Processed tile.
 
     Returns
     -------
-        processed_tile
-            Processed tile stripped of Output wrapper.
+    processed_tile
+        Processed tile stripped of Output wrapper.
 
     """
 
@@ -314,18 +314,18 @@ def strip_output_wrapper(processed_tile):
 
 def update_tiles(processed_tiles, processed_tile, index, batch_axis):
 
-    """ Update a Tiled object.
+    """Update a Tiled object.
 
     Parameters
     ----------
-        processed_tiles: Tiled
-            Array of tiles.
-        processed_tile
-            Processed tile.
-        index : tuple of int
-            Index of a tile.
-        batch_axis : bool
-            Whether to use the first axis to create batches.
+    processed_tiles: Tiled
+        Array of tiles.
+    processed_tile
+        Processed tile.
+    index : tuple of int
+        Index of a tile.
+    batch_axis : bool
+        Whether to use the first axis to create batches.
     """
 
     if batch_axis:
@@ -353,21 +353,21 @@ def update_tiles(processed_tiles, processed_tile, index, batch_axis):
 
 def check_compatability(tiles):
 
-    """ Check if the given tiles are compatible.
+    """Check if the given tiles are compatible.
 
     Parameters
     ----------
-        tiles : list of Tiled
-            Array of tiles.
+    tiles : list of Tiled
+        Array of tiles.
 
     Raises
     ------
-        ValueError
-            If no tiles are given.
-        ValueError
-            If tiles do not all share a common profile.
-        ValueError
-            If tiles do not all share a common mask.
+    ValueError
+        If no tiles are given.
+    ValueError
+        If tiles do not all share a common profile.
+    ValueError
+        If tiles do not all share a common mask.
     """
 
     if len(tiles) == 0:

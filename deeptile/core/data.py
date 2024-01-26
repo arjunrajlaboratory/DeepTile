@@ -8,19 +8,19 @@ from functools import cached_property, partial
 
 class Output:
 
-    """ Output class for attaching metadata to function outputs.
+    """Output class for attaching metadata to function outputs.
 
     Parameters
     ----------
-        output : numpy.ndarray
-            Output array.
-        **kwargs : dict
-            Metadata associated with this function output.
+    output : numpy.ndarray
+        Output array.
+    **kwargs : dict
+        Metadata associated with this function output.
 
     Returns
     -------
-        output : Output
-            Output array.
+    output : Output
+        Output array.
     """
 
     def __init__(self, output, **metadata):
@@ -31,24 +31,23 @@ class Output:
 
 class Data(np.ndarray):
 
-    """ numpy.ndarray subclass for storing DeepTile data.
-    """
+    """numpy.ndarray subclass for storing DeepTile data."""
 
     def __new__(cls, data, job):
 
-        """ Create new Data object.
+        """Create new Data object.
 
         Parameters
         ----------
-            data : numpy.ndarray or Data
-                Data array.
-            job : Job
-                Job that generated this data object.
+        data : numpy.ndarray or Data
+            Data array.
+        job : Job
+            Job that generated this data object.
 
         Returns
         -------
-            data : Data
-                Data array.
+        data : Data
+            Data array.
         """
 
         data = np.asarray(data).view(cls)
@@ -65,32 +64,31 @@ class Data(np.ndarray):
 
 class Tiled(Data):
 
-    """ numpy.ndarray subclass for storing DeepTile tiled data.
-    """
+    """numpy.ndarray subclass for storing DeepTile tiled data."""
 
     def __new__(cls, tiles, job, mask=None, isimage=True, stackable=False, tile_scales=None):
 
-        """ Create new Tiled object.
+        """Create new Tiled object.
 
         Parameters
         ----------
-            tiles : numpy.ndarray or Tiled
-                Array of tiles.
-            job : Job
-                Job that generated this tiled object.
-            mask : numpy.ndarray or None, optional, default None
-                Boolean mask. If ``None``, a boolean array with all True values will be used.
-            isimage : bool, optional, default True
-                Whether each tile is an image.
-            stackable : bool, optional, default True
-                Whether tiles can be stacked.
-            tile_scales : tuple of float or None, optional, default None
-                Tile scales relative to profile tile sizes. If ``None``, the values will be inferred.
+        tiles : numpy.ndarray or Tiled
+            Array of tiles.
+        job : Job
+            Job that generated this tiled object.
+        mask : numpy.ndarray or None, optional, default None
+            Boolean mask. If ``None``, a boolean array with all True values will be used.
+        isimage : bool, optional, default True
+            Whether each tile is an image.
+        stackable : bool, optional, default True
+            Whether tiles can be stacked.
+        tile_scales : tuple of float or None, optional, default None
+            Tile scales relative to profile tile sizes. If ``None``, the values will be inferred.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         tiles = super().__new__(cls, tiles, job)
@@ -109,12 +107,12 @@ class Tiled(Data):
 
     def __array_finalize__(self, tiles, **kwargs):
 
-        """ Finalize Tiled object.
+        """Finalize Tiled object.
 
         Parameters
         ----------
-            tiles : numpy.ndarray or Tiled
-                Array of tiles.
+        tiles : numpy.ndarray or Tiled
+            Array of tiles.
         """
 
         if tiles is None:
@@ -129,26 +127,25 @@ class Tiled(Data):
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
 
-        """ Process tiles using a NumPy universal function.
+        """Process tiles using a NumPy universal function.
 
         Parameters
         ----------
-            ufunc : numpy.ufunc
-                The ufunc object that was called.
-            methods : str
-                String indicating how the ``ufunc`` was called, either ``"__call__"`` to indicate it was called
-                directly, or one of its methods: ``"reduce"``, ``"accumulate"``, ``"reduceat"``, ``"outer"``, or
-                ``"at"``.
-            inputs : tuple
-                Tuple of the input arguments to the ``ufunc``.
-            **kwargs : dict
-                Contains any optional or keyword arguments passed to the function. This includes any ``out`` arguments,
-                which are always contained in a tuple.
+        ufunc : numpy.ufunc
+            The ufunc object that was called.
+        methods : str
+            String indicating how the ``ufunc`` was called, either ``"__call__"`` to indicate it was called directly, or
+            one of its methods: ``"reduce"``, ``"accumulate"``, ``"reduceat"``, ``"outer"``, or ``"at"``.
+        inputs : tuple
+            Tuple of the input arguments to the ``ufunc``.
+        **kwargs : dict
+            Contains any optional or keyword arguments passed to the function. This includes any ``out`` arguments,
+            which are always contained in a tuple.
 
         Returns
         -------
-            processed_tiles : Tiled
-                Array of tiles after processing with ``ufunc``.
+        processed_tiles : Tiled
+            Array of tiles after processing with ``ufunc``.
         """
 
         from deeptile.core import process
@@ -184,24 +181,24 @@ class Tiled(Data):
 
     def __array_function__(self, func, types, args, kwargs):
 
-        """ Process tiles using an arbitrary NumPy function.
+        """Process tiles using an arbitrary NumPy function.
 
         Parameters
         ----------
-            func : Callable
-                Arbitrary callable exposed by NumPy’s public API, which was called in the form func(*args, **kwargs).
-            types : tuple
-                types is a collection collections.abc.Collection of unique argument types from the original NumPy
-                function call that implement __array_function__.
-            args : tuple
-                Tuple of arguments directly passed on from the original call.
-            kwargs : dict
-                Dictionary of keyword arguments directly passed on from the original call.
+        func : Callable
+            Arbitrary callable exposed by NumPy’s public API, which was called in the form func(*args, **kwargs).
+        types : tuple
+            types is a collection collections.abc.Collection of unique argument types from the original NumPy function
+            call that implement __array_function__.
+        args : tuple
+            Tuple of arguments directly passed on from the original call.
+        kwargs : dict
+            Dictionary of keyword arguments directly passed on from the original call.
 
         Returns
         -------
-            processed_tiles : Tiled
-                Array of tiles after processing with ``func``.
+        processed_tiles : Tiled
+            Array of tiles after processing with ``func``.
         """
 
         from deeptile.core import process
@@ -239,21 +236,21 @@ class Tiled(Data):
 
     def compute(self, batch_axis=False, pad_final_batch=False, batch_size=None, **kwargs):
 
-        """ Compute Dask arrays.
+        """Compute Dask arrays.
 
         Parameters
         ----------
-            batch_axis : bool, optional, default False
-                Whether to use the first axis to create batches.
-            pad_final_batch : bool, optional, default False
-                Whether to pad the final batch to the specified ``batch_size``.
-            batch_size : int or None, optional, default None
-                Number of tiles in each batch.
+        batch_axis : bool, optional, default False
+            Whether to use the first axis to create batches.
+        pad_final_batch : bool, optional, default False
+            Whether to pad the final batch to the specified ``batch_size``.
+        batch_size : int or None, optional, default None
+            Number of tiles in each batch.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         from deeptile.core.lift import lift
@@ -273,21 +270,21 @@ class Tiled(Data):
 
     def persist(self, batch_axis=False, pad_final_batch=False, batch_size=None, **kwargs):
 
-        """ Persist Dask arrays into memory.
+        """Persist Dask arrays into memory.
 
         Parameters
         ----------
-            batch_axis : bool, optional, default False
-                Whether to use the first axis to create batches.
-            pad_final_batch : bool, optional, default False
-                Whether to pad the final batch to the specified ``batch_size``.
-            batch_size : int or None, optional, default None
-                Number of tiles in each batch.
+        batch_axis : bool, optional, default False
+            Whether to use the first axis to create batches.
+        pad_final_batch : bool, optional, default False
+            Whether to pad the final batch to the specified ``batch_size``.
+        batch_size : int or None, optional, default None
+            Number of tiles in each batch.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         from deeptile.core.lift import lift
@@ -307,18 +304,18 @@ class Tiled(Data):
 
     def pad(self, **kwargs):
 
-        """ Pad tiles to the same size.
+        """Pad tiles to the same size.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
 
         Raises
         ------
         NotImplementedError
             If padding ``mode`` is not supported.
-    """
+        """
 
         mode = kwargs.get('mode', 'constant')
 
@@ -414,12 +411,12 @@ class Tiled(Data):
 
     def unpad(self):
 
-        """ Unpad tiles.
+        """Unpad tiles.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
         """
 
         if self.metadata['isimage'] and self.metadata['stackable']:
@@ -447,24 +444,24 @@ class Tiled(Data):
 
     def import_data(self, data, data_type):
 
-        """ Import external data and tile using the same tiling profile.
+        """Import external data and tile using the same tiling profile.
 
         Parameters
         ----------
-            data
-                Data to be imported.
-            data_type : str
-                Data object type.
+        data
+            Data to be imported.
+        data_type : str
+            Data object type.
 
         Returns
         -------
-            tiles : Tiled
-                Array of tiles.
+        tiles : Tiled
+            Array of tiles.
 
         Raises
         ------
-            ValueError
-                If ``data_type`` is invalid.
+        ValueError
+            If ``data_type`` is invalid.
         """
 
         job_locals = locals()
@@ -492,12 +489,12 @@ class Tiled(Data):
     @cached_property
     def tile_size(self):
 
-        """ Calculate scaled tile size.
+        """Calculate scaled tile size.
 
         Returns
         -------
-            tile_size : tuple of int
-                Scaled tile size.
+        tile_size : tuple of int
+            Scaled tile size.
         """
 
         profile_tile_size = self.profile.tile_size
@@ -519,12 +516,12 @@ class Tiled(Data):
     @cached_property
     def tile_scales(self):
 
-        """ Calculate tile scales relative to profile tile sizes.
+        """Calculate tile scales relative to profile tile sizes.
 
         Returns
         -------
-            image_scales : tuple of float
-                Tile scales relative to profile tile sizes.
+        image_scales : tuple of float
+            Tile scales relative to profile tile sizes.
         """
 
         profile_tile_size = self.profile.tile_size
@@ -536,12 +533,12 @@ class Tiled(Data):
     @cached_property
     def image_size(self):
 
-        """ Calculate scaled image size.
+        """Calculate scaled image size.
 
         Returns
         -------
-            image_size : tuple of int
-                Scaled image size.
+        image_size : tuple of int
+            Scaled image size.
         """
 
         profile_image_shape = self.dt.image_shape
@@ -553,12 +550,12 @@ class Tiled(Data):
     @cached_property
     def image_scales(self):
 
-        """ Calculate image scales relative to profile image size.
+        """Calculate image scales relative to profile image size.
 
         Returns
         -------
-            image_scales : tuple of float
-                Image scales relative to profile image size.
+        image_scales : tuple of float
+            Image scales relative to profile image size.
         """
 
         profile_image_shape = self.dt.image_shape
@@ -570,17 +567,17 @@ class Tiled(Data):
     @cached_property
     def nonempty_mask(self):
 
-        """ Get a mask for nonempty tiles to be processed.
+        """Get a mask for nonempty tiles to be processed.
 
         Returns
         -------
-            nonempty_mask : numpy.ndarray
-                Mask for nonempty tiles to be processed.
+        nonempty_mask : numpy.ndarray
+            Mask for nonempty tiles to be processed.
 
         Raises
         ------
-            ValueError
-                If there are no nonempty tiles to process.
+        ValueError
+            If there are no nonempty tiles to process.
         """
 
         nonempty_mask = self.mask * self.profile.nonempty_mask
@@ -592,12 +589,12 @@ class Tiled(Data):
     @cached_property
     def nonempty_indices(self):
 
-        """ Get arrays of indices for nonempty tiles to be processed.
+        """Get arrays of indices for nonempty tiles to be processed.
 
         Returns
         -------
-            nonempty_indices : tuple of numpy.ndarray
-                Arrays of indices for nonempty tiles to be processed.
+        nonempty_indices : tuple of numpy.ndarray
+            Arrays of indices for nonempty tiles to be processed.
         """
 
         nonempty_indices = np.where(self.nonempty_mask)
@@ -607,12 +604,12 @@ class Tiled(Data):
     @cached_property
     def nonempty_indices_tuples(self):
 
-        """ Get tuples of indices for nonempty tiles to be processed.
+        """Get tuples of indices for nonempty tiles to be processed.
 
         Returns
         -------
-            nonempty_indices_tuples : tuple of tuple
-                Tuples of indices for nonempty tiles to be processed.
+        nonempty_indices_tuples : tuple of tuple
+            Tuples of indices for nonempty tiles to be processed.
         """
 
         nonempty_indices_tuples = tuple(zip(*(tuple(indices) for indices in self.nonempty_indices)))
@@ -622,12 +619,12 @@ class Tiled(Data):
     @cached_property
     def tile_indices(self):
 
-        """ Calculate scaled tile indices.
+        """Calculate scaled tile indices.
 
         Returns
         -------
-            tile_indices : tuple of numpy.ndarray
-                Scaled tile indices.
+        tile_indices : tuple of numpy.ndarray
+            Scaled tile indices.
         """
 
         image_scales = self.image_scales
@@ -640,12 +637,12 @@ class Tiled(Data):
     @cached_property
     def border_indices(self):
 
-        """ Calculate scaled border indices.
+        """Calculate scaled border indices.
 
         Returns
         -------
-            border_indices : tuple of numpy.ndarray
-                Scaled border indices.
+        border_indices : tuple of numpy.ndarray
+            Scaled border indices.
         """
 
         image_scales = self.image_scales
@@ -658,12 +655,12 @@ class Tiled(Data):
     @cached_property
     def index_iterator(self):
 
-        """ Get a Tiled iterator for array indices.
+        """Get a Tiled iterator for array indices.
 
         Returns
         -------
-            index_iterator : IndexIterator
-                Tiled iterator for array indices.
+        index_iterator : IndexIterator
+            Tiled iterator for array indices.
         """
 
         index_iterator = IndexIterator(self)
@@ -673,12 +670,12 @@ class Tiled(Data):
     @cached_property
     def tile_indices_iterator(self):
 
-        """ Get a Tiled iterator for tile indices.
+        """Get a Tiled iterator for tile indices.
 
         Returns
         -------
-            tile_indices_iterator : TileIndicesIterator
-                Tiled iterator for tile indices.
+        tile_indices_iterator : TileIndicesIterator
+            Tiled iterator for tile indices.
         """
 
         tile_indices_iterator = TileIndicesIterator(self)
@@ -688,12 +685,12 @@ class Tiled(Data):
     @cached_property
     def border_indices_iterator(self):
 
-        """ Get a Tiled iterator for border indices.
+        """Get a Tiled iterator for border indices.
 
         Returns
         -------
-            border_indices_iterator : BorderIndicesIterator
-                Tiled iterator for border indices.
+        border_indices_iterator : BorderIndicesIterator
+            Tiled iterator for border indices.
         """
 
         border_indices_iterator = BorderIndicesIterator(self)
@@ -703,12 +700,12 @@ class Tiled(Data):
     @cached_property
     def stitch_indices_iterator(self):
 
-        """ Get a Tiled iterator for stitch indices.
+        """Get a Tiled iterator for stitch indices.
 
         Returns
         -------
-            stitch_indices_iterator : StitchIndicesIterator
-                Tiled iterator for stitch indices.
+        stitch_indices_iterator : StitchIndicesIterator
+            Tiled iterator for stitch indices.
         """
 
         stitch_indices_iterator = StitchIndicesIterator(self)
@@ -718,12 +715,12 @@ class Tiled(Data):
     @cached_property
     def s(self):
 
-        """ Get the Slice object for tile-wise slicing.
+        """Get the Slice object for tile-wise slicing.
 
         Returns
         -------
-            s : Slice
-                Slice object for tile-wise slicing.
+        s : Slice
+            Slice object for tile-wise slicing.
         """
 
         s = Slice(self)
@@ -733,12 +730,12 @@ class Tiled(Data):
     @cached_property
     def m(self):
 
-        """ Get the Mask object for masking.
+        """Get the Mask object for masking.
 
         Returns
         -------
-            m : Mask
-                Mask object for masking.
+        m : Mask
+            Mask object for masking.
         """
 
         m = Mask(self)
@@ -748,24 +745,23 @@ class Tiled(Data):
 
 class Stitched(Data):
 
-    """ numpy.ndarray subclass for storing DeepTile stitched data.
-    """
+    """numpy.ndarray subclass for storing DeepTile stitched data."""
 
     def __new__(cls, stitched, job):
 
-        """ Create new Stitched object.
+        """Create new Stitched object.
 
         Parameters
         ----------
-            stitched : numpy.ndarray
-                Stitched object.
-            job : Job
-                Job that generated this stitched object.
+        stitched : numpy.ndarray
+            Stitched object.
+        job : Job
+            Job that generated this stitched object.
 
         Returns
         -------
-            stitched : Stitched
-                Stitched object.
+        stitched : Stitched
+            Stitched object.
         """
 
         stitched = super().__new__(cls, stitched, job)
@@ -774,12 +770,12 @@ class Stitched(Data):
 
     def __array_finalize__(self, stitched, **kwargs):
 
-        """ Finalize Stitched object.
+        """Finalize Stitched object.
 
         Parameters
         ----------
-            stitched : numpy.ndarray
-                Stitched object.
+        stitched : numpy.ndarray
+            Stitched object.
         """
 
         if stitched is None:
@@ -791,12 +787,12 @@ class Stitched(Data):
 
 class Slice:
 
-    """ Slice class for tile-wise slicing.
+    """Slice class for tile-wise slicing.
 
     Parameters
     ----------
-        tiles : Tiled
-            Array of tiles.
+    tiles : Tiled
+        Array of tiles.
     """
 
     def __init__(self, tiles):
@@ -805,17 +801,17 @@ class Slice:
 
     def __getitem__(self, slices):
 
-        """ Apply slices to each tile.
+        """Apply slices to each tile.
 
         Parameters
         ----------
-            slices : tuple
-                Tuple of slice objects designating slices to be extracted.
+        slices : tuple
+            Tuple of slice objects designating slices to be extracted.
 
         Returns
         -------
-            sliced_tiles : Tiled
-                Sliced array of tiles.
+        sliced_tiles : Tiled
+            Sliced array of tiles.
         """
 
         sliced_tiles = self.tiles.copy()
@@ -831,12 +827,12 @@ class Slice:
 
 class Mask:
 
-    """ Mask class for masking Tiled objects.
+    """Mask class for masking Tiled objects.
 
     Parameters
     ----------
-        tiles : Tiled
-            Array of tiles.
+    tiles : Tiled
+        Array of tiles.
     """
 
     def __init__(self, tiles):
@@ -845,17 +841,17 @@ class Mask:
 
     def __getitem__(self, mask):
 
-        """ Mask Tiled object.
+        """Mask Tiled object.
 
         Parameters
         ----------
-            mask : numpy.ndarray
-                Boolean mask.
+        mask : numpy.ndarray
+            Boolean mask.
 
         Returns
         -------
-            masked_tiles : Tiled
-                Masked array of tiles.
+        masked_tiles : Tiled
+            Masked array of tiles.
         """
 
         mask = np.broadcast_to(mask, self.tiles.shape).astype(bool)

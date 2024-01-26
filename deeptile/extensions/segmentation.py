@@ -8,20 +8,21 @@ from rasterio import features
 
 def cellpose_segmentation(model_parameters, eval_parameters, output_format='masks'):
 
-    """ Generate lifted function for the Cellpose segmentation algorithm.
+    """Generate lifted function for the Cellpose segmentation algorithm.
 
     Parameters
     ----------
-        model_parameters : dict
-            Dictionary of model parameters.
-        eval_parameters : dict
-            Dictionary of evaluation parameters.
-        output_format : str, optional
-            Format of the output. Supported formats are 'masks' and 'polygons'. Default is 'masks'.
+    model_parameters : dict
+        Dictionary of model parameters.
+    eval_parameters : dict
+        Dictionary of evaluation parameters.
+    output_format : str, optional
+        Format of the output. Supported formats are 'masks' and 'polygons'. Default is 'masks'.
+
     Returns
     -------
-        func_segment : Callable
-            Lifted function for the Cellpose segmentation algorithm.
+    func_segment : Callable
+        Lifted function for the Cellpose segmentation algorithm.
     """
 
     from cellpose.models import Cellpose
@@ -52,19 +53,19 @@ def cellpose_segmentation(model_parameters, eval_parameters, output_format='mask
 
 def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
-    """ Generate lifted function for the DeepCell Mesmer segmentation algorithm.
+    """Generate lifted function for the DeepCell Mesmer segmentation algorithm.
 
     Parameters
     ----------
-        model_parameters : dict
-            Dictionary of model parameters.
-        eval_parameters : dict
-            Dictionary of evaluation parameters.
+    model_parameters : dict
+        Dictionary of model parameters.
+    eval_parameters : dict
+        Dictionary of evaluation parameters.
 
     Returns
     -------
-        func_segment : Callable
-            Lifted function for the DeepCell Mesmer segmentation algorithm.
+    func_segment : Callable
+        Lifted function for the DeepCell Mesmer segmentation algorithm.
     """
 
     from deepcell.applications import Mesmer
@@ -86,19 +87,19 @@ def deepcell_mesmer_segmentation(model_parameters, eval_parameters):
 
 def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
-    """ Generate lifted function for the DeepCell Nuclear segmentation algorithm.
+    """Generate lifted function for the DeepCell Nuclear segmentation algorithm.
 
     Parameters
     ----------
-        model_parameters : dict
-            Dictionary of model parameters.
-        eval_parameters : dict
-            Dictionary of evaluation parameters.
+    model_parameters : dict
+        Dictionary of model parameters.
+    eval_parameters : dict
+        Dictionary of evaluation parameters.
 
     Returns
     -------
-        func_segment : Callable
-            Lifted function for the DeepCell Nuclear segmentation algorithm.
+    func_segment : Callable
+        Lifted function for the DeepCell Nuclear segmentation algorithm.
     """
 
     from deepcell.applications import NuclearSegmentation
@@ -119,19 +120,19 @@ def deepcell_nuclear_segmentation(model_parameters, eval_parameters):
 
 def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
-    """ Generate lifted function for the DeepCell Cytoplasm segmentation algorithm.
+    """Generate lifted function for the DeepCell Cytoplasm segmentation algorithm.
 
     Parameters
     ----------
-        model_parameters : dict
-            Dictionary of model parameters.
-        eval_parameters : dict
-            Dictionary of evaluation parameters.
+    model_parameters : dict
+        Dictionary of model parameters.
+    eval_parameters : dict
+        Dictionary of evaluation parameters.
 
     Returns
     -------
-        func_segment : Callable
-            Lifted function for the DeepCell Cytoplasm segmentation algorithm.
+    func_segment : Callable
+        Lifted function for the DeepCell Cytoplasm segmentation algorithm.
     """
 
     from deepcell.applications import CytoplasmSegmentation

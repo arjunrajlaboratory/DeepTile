@@ -8,22 +8,22 @@ from skimage import measure
 
 def stitch_image(tiles, blend=True, sigma=10):
 
-    """ Stitch tiled images into a large image.
+    """Stitch tiled images into a large image.
 
     Parameters
     ----------
-        tiles : Tiled
-            Array of tiled images.
-        blend : bool, optional, default True
-            Whether to blend tile overlaps.
-        sigma : int, optional, default 10
-            Sigma bandwidth parameter used to generate sigmoid taper for blending. If ``blend`` is ``False``, this value
-            is ignored.
+    tiles : Tiled
+        Array of tiled images.
+    blend : bool, optional, default True
+        Whether to blend tile overlaps.
+    sigma : int, optional, default 10
+        Sigma bandwidth parameter used to generate sigmoid taper for blending. If ``blend`` is ``False``, this value is
+        ignored.
 
     Returns
     -------
-        stitched : Stitched
-            Stitched image.
+    stitched : Stitched
+        Stitched image.
     """
 
     job_locals = locals()
@@ -122,19 +122,19 @@ def stitch_polygons(polygons, iou_threshold=0.1):
 
 def stitch_masks(masks, iou_threshold=0.1):
 
-    """ Stitch tiled masks into a large mask.
+    """Stitch tiled masks into a large mask.
 
     Parameters
     ----------
-        masks : Tiled
-            Array of tiled masks.
-        iou_threshold : float, optional, default 0.1
-            IOU score threshold used for mask stitching at tile borders.
+    masks : Tiled
+        Array of tiled masks.
+    iou_threshold : float, optional, default 0.1
+        IOU score threshold used for mask stitching at tile borders.
 
     Returns
     -------
-        stitched_mask : Stitched
-            Stitched mask.
+    stitched_mask : Stitched
+        Stitched mask.
     """
 
     job_locals = locals()
@@ -214,17 +214,17 @@ def stitch_masks(masks, iou_threshold=0.1):
 
 def stitch_coords(coords):
 
-    """ Stitch tiled coordinates.
+    """Stitch tiled coordinates.
 
     Parameters
     ----------
-        coords : Tiled
-            Array of tiled coordinates.
+    coords : Tiled
+        Array of tiled coordinates.
 
     Returns
     -------
-        stitched_coords : Stitched
-            Stitched coordinates.
+    stitched_coords : Stitched
+        Stitched coordinates.
     """
 
     job = Job(coords, 'stitch_coords', {})
@@ -273,21 +273,21 @@ def stitch_coords(coords):
 
 def _generate_taper(tile_size, overlap, sigma):
 
-    """ (For internal use) Generate taper used for blending tile overlaps.
+    """(For internal use) Generate taper used for blending tile overlaps.
 
     Parameters
     ----------
-        tile_size : tuple
-            Size of each tile.
-        overlap : tuple
-            Fractions of ``tile_size`` to use for overlap.
-        sigma : int
-            Sigma bandwidth parameter.
+    tile_size : tuple
+        Size of each tile.
+    overlap : tuple
+        Fractions of ``tile_size`` to use for overlap.
+    sigma : int
+        Sigma bandwidth parameter.
 
     Returns
     -------
-        taper : numpy.array
-            Taper used for blending tile overlaps.
+    taper : numpy.array
+        Taper used for blending tile overlaps.
     """
 
     x = np.arange(tile_size[1])
@@ -335,19 +335,19 @@ def _overlapping_polygons_rtree(polygons1, polygons2, iou_threshold=0.1):
 
 def _calculate_iou_score(a, b):
 
-    """ (For internal use) Calculate IOU score.
+    """(For internal use) Calculate IOU score.
 
     Parameters
     ----------
-        a : numpy.array
-            Boolean array containing object A.
-        b : numpy.array
-            Boolean array containing object B.
+    a : numpy.array
+        Boolean array containing object A.
+    b : numpy.array
+        Boolean array containing object B.
 
     Returns
     -------
-        iou_score : float
-            IOU score for objects A and B.
+    iou_score : float
+        IOU score for objects A and B.
     """
 
     iou_score = np.sum(a & b) / np.sum(a | b)

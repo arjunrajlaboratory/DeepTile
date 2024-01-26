@@ -3,21 +3,21 @@ from collections.abc import Mapping, Sequence, MutableMapping, MutableSequence
 
 def tree_scan(tree):
 
-    """ Scan a tree for all branches and leaves.
+    """Scan a tree for all branches and leaves.
 
     Parameters
     ----------
-        tree
-            Tree object.
+    tree
+        Tree object.
 
     Returns
     -------
-        istree : bool
-            Whether the object is a tree.
-        branch_indices : list of tuple
-            List of all branch indices.
-        leaf_indices: list of tuple
-            List of all leaf indices.
+    istree : bool
+        Whether the object is a tree.
+    branch_indices : list of tuple
+        List of all branch indices.
+    leaf_indices: list of tuple
+        List of all leaf indices.
     """
 
     istree = _check_istree(tree)
@@ -56,21 +56,21 @@ def tree_scan(tree):
 
 def tree_apply(tree, leaf_indices, func):
 
-    """ Apply a function to all given leaves of a tree.
+    """Apply a function to all given leaves of a tree.
 
     Parameters
     ----------
-        tree
-            Tree object.
-        leaf_indices : list of tuple
-            List of leaf indices.
-        func : Callable
-            Callable to be applied on tree leaves.
+    tree
+        Tree object.
+    leaf_indices : list of tuple
+        List of leaf indices.
+    func : Callable
+        Callable to be applied on tree leaves.
 
     Returns
     -------
-        tree
-            Tree object.
+    tree
+        Tree object.
     """
 
     if _check_istree(tree):
@@ -105,16 +105,16 @@ def tree_apply(tree, leaf_indices, func):
 
 def tree_replace(tree, index, new_obj):
 
-    """ Replace a branch or leaf in a tree.
+    """Replace a branch or leaf in a tree.
 
     Parameters
     ----------
-        tree
-            Tree object.
-        index : tuple of int
-            Branch or leaf index.
-        new_obj : obj
-            New object for replacement.
+    tree
+        Tree object.
+    index : tuple of int
+        Branch or leaf index.
+    new_obj : obj
+        New object for replacement.
     """
 
     branch_index = index[:-1]
@@ -130,19 +130,19 @@ def tree_replace(tree, index, new_obj):
 
 def tree_index(tree, index):
 
-    """ Index a tree.
+    """Index a tree.
 
     Parameters
     ----------
-        tree
-            Tree object.
-        index : tuple of int
-            Branch or leaf index.
+    tree
+        Tree object.
+    index : tuple of int
+        Branch or leaf index.
 
     Returns
     -------
-        obj
-            Object at given index.
+    obj
+        Object at given index.
     """
 
     obj = tree
@@ -161,17 +161,17 @@ def tree_index(tree, index):
 
 def _check_istree(obj):
 
-    """ (For internal use) Check if an object is a tree.
+    """(For internal use) Check if an object is a tree.
 
     Parameters
     ----------
-        obj
-            Object to be checked.
+    obj
+        Object to be checked.
 
     Returns
     -------
-        istree : bool
-            Whether the object is a tree.
+    istree : bool
+        Whether the object is a tree.
     """
 
     istree = isinstance(obj, (Mapping, Sequence)) and not isinstance(obj, str)
@@ -181,17 +181,17 @@ def _check_istree(obj):
 
 def _get_branches_from_leaves(leaf_indices):
 
-    """ (For internal use) Get a list of branch indices from leaf indices.
+    """(For internal use) Get a list of branch indices from leaf indices.
 
     Parameters
     ----------
-        leaf_indices: list of tuple
-            List of leaf indices.
+    leaf_indices: list of tuple
+        List of leaf indices.
 
     Returns
     -------
-        branch_indices : list of tuple
-            List of branch indices.
+    branch_indices : list of tuple
+        List of branch indices.
     """
 
     branch_indices = set(index[:-1] for index in leaf_indices if len(index) > 1)

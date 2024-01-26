@@ -6,29 +6,29 @@ from pathlib import Path
 
 def load(image, dask=True, link_data=True):
 
-    """ Load image into a DeepTile object.
+    """Load image into a DeepTile object.
 
     Parameters
     ----------
-        image
-            An object or path of an image.
-        dask : bool, optional, default True
-            Whether to use Dask for lazy loading and processing.
-        link_data : bool, optional, default True
-            Whether to link input and output data to the profile and job objects. Set to ``False`` to reduce memory
-            usage.
+    image
+        An object or path of an image.
+    dask : bool, optional, default True
+        Whether to use Dask for lazy loading and processing.
+    link_data : bool, optional, default True
+        Whether to link input and output data to the profile and job objects. Set to ``False`` to reduce memory
+        usage.
 
     Returns
     -------
-        dt : DeepTile
-            DeepTile object.
+    dt : DeepTile
+        DeepTile object.
 
     Raises
     ------
-        ValueError
-            If ``image`` has an unsupported file type.
-        ValueError
-            If ``image`` is invalid.
+    ValueError
+        If ``image`` has an unsupported file type.
+    ValueError
+        If ``image`` is invalid.
     """
 
     if isinstance(image, Array):
@@ -54,19 +54,19 @@ def load(image, dask=True, link_data=True):
 
 def from_array(image, dask):
 
-    """ Create a DeepTileArray object from an array.
+    """Create a DeepTileArray object from an array.
 
     Parameters
     ----------
-        image : array_like
-            An array-like object of an image.
-        dask : bool, optional, default True
-            Whether to use Dask for lazy loading and processing.
+    image : array_like
+        An array-like object of an image.
+    dask : bool, optional, default True
+        Whether to use Dask for lazy loading and processing.
 
     Returns
     -------
-        dt : DeepTileArray
-            DeepTileArray object.
+    dt : DeepTileArray
+        DeepTileArray object.
     """
 
     from deeptile.sources import array
@@ -78,17 +78,17 @@ def from_array(image, dask):
 
 def from_large_image(image):
 
-    """ Create a DeepTileLargeImage object from a large_image tile source.
+    """Create a DeepTileLargeImage object from a large_image tile source.
 
     Parameters
     ----------
-        image : large_image tile source
-            A large_image tile source.
+    image : large_image tile source
+        A large_image tile source.
 
     Returns
     -------
-        dt : DeepTileLargeImage
-            DeepTileLargeImage object.
+    dt : DeepTileLargeImage
+        DeepTileLargeImage object.
     """
 
     dt = deeptile.DeepTileLargeImage(image)
@@ -98,17 +98,17 @@ def from_large_image(image):
 
 def from_nd2(image):
 
-    """ Create a DeepTileND2 object from an ND2 file.
+    """Create a DeepTileND2 object from an ND2 file.
 
     Parameters
     ----------
-        image : str
-            Path to an ND2 file.
+    image : str
+        Path to an ND2 file.
 
     Returns
     -------
-        dt : DeepTileND2
-            DeepTileND2 object.
+    dt : DeepTileND2
+        DeepTileND2 object.
     """
 
     from deeptile.sources import nd2
@@ -122,19 +122,19 @@ def from_nd2(image):
 
 def from_tiff(image, dask):
 
-    """ Create a DeepTileArray object from a TIFF file.
+    """Create a DeepTileArray object from a TIFF file.
 
     Parameters
     ----------
-        image : str
-            Path to a TIFF file.
-        dask : bool, optional, default True
-            Whether to use Dask for lazy loading and processing.
+    image : str
+        Path to a TIFF file.
+    dask : bool, optional, default True
+        Whether to use Dask for lazy loading and processing.
 
     Returns
     -------
-        dt : DeepTileArray
-            DeepTileArray object.
+    dt : DeepTileArray
+        DeepTileArray object.
     """
 
     from deeptile.sources import tiff

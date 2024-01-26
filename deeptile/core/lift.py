@@ -8,31 +8,30 @@ from functools import wraps
 
 class Lifted:
 
-    """ Lifted class for functions lifted to be applied on Tiled objects.
-    """
+    """Lifted class for functions lifted to be applied on Tiled objects."""
 
     def __new__(cls, func, vectorized, batch_axis, pad_final_batch, batch_size):
 
-        """ Lift function.
+        """Lift function.
 
         Parameters
         ----------
-            func : Callable
-                Callable for use in tile processing.
-            vectorized : bool
-                Whether the algorithm is vectorized to support batching.
-            batch_axis : bool
-                Whether to use the first axis to create batches.
-            pad_final_batch : bool
-                Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
-                batching, this value is ignored.
-            batch_size : int
-                Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
+        func : Callable
+            Callable for use in tile processing.
+        vectorized : bool
+            Whether the algorithm is vectorized to support batching.
+        batch_axis : bool
+            Whether to use the first axis to create batches.
+        pad_final_batch : bool
+            Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
+            batching, this value is ignored.
+        batch_size : int
+            Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
 
         Returns
         -------
-            lifted_func : Callable
-                Lifted function.
+        lifted_func : Callable
+            Lifted function.
         """
 
         lifted_func = super().__new__(cls)
@@ -47,12 +46,12 @@ class Lifted:
 
     def __call__(self, *args, **kwargs):
 
-        """ Apply lifted function on Tiled objects.
+        """Apply lifted function on Tiled objects.
 
         Returns
         -------
-            processed_tiles
-                Tiles processed by lifted function.
+        processed_tiles
+            Tiles processed by lifted function.
         """
 
         processed_tiles, variables = self.init(*args, **kwargs)
@@ -65,14 +64,14 @@ class Lifted:
 
     def init(self, *args, **kwargs):
 
-        """ Initialize a lifted job.
+        """Initialize a lifted job.
 
         Returns
         -------
-            processed_tiles
-                Tiles processed by lifted function.
-            variables : dict
-                Dictionary of variables used in the lifted job.
+        processed_tiles
+            Tiles processed by lifted function.
+        variables : dict
+            Dictionary of variables used in the lifted job.
         """
 
         job_locals = locals()
@@ -128,21 +127,21 @@ class Lifted:
 
     def apply(self, processed_tiles, variables):
 
-        """ Take one step in a lifted job.
+        """Take one step in a lifted job.
 
         Parameters
         ----------
-            processed_tiles
-                Tiles processed by lifted function.
-            variables : dict
-                Dictionary of variables used in the lifted job.
+        processed_tiles
+            Tiles processed by lifted function.
+        variables : dict
+            Dictionary of variables used in the lifted job.
 
         Returns
         -------
-            processed_tiles
-                Tiles processed by lifted function.
-            variables : dict
-                Dictionary of variables used in the lifted job.
+        processed_tiles
+            Tiles processed by lifted function.
+        variables : dict
+            Dictionary of variables used in the lifted job.
         """
 
         n_steps = variables['n_steps']
@@ -189,26 +188,26 @@ class Lifted:
 
 def lift(func, vectorized=False, batch_axis=False, pad_final_batch=False, batch_size=4):
 
-    """ Lift function to be applied on Tiled objects.
+    """Lift function to be applied on Tiled objects.
 
     Parameters
     ----------
-        func : Callable
-            Callable for use in tile processing.
-        vectorized : bool, optional, default False
-            Whether the algorithm is vectorized to support batching.
-        batch_axis : bool, optional, default False
-            Whether to use the first axis to create batches.
-        pad_final_batch : bool, optional, default False
-            Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support
-            batching, this value is ignored.
-        batch_size : int, optional, default 4
-            Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
+    func : Callable
+        Callable for use in tile processing.
+    vectorized : bool, optional, default False
+        Whether the algorithm is vectorized to support batching.
+    batch_axis : bool, optional, default False
+        Whether to use the first axis to create batches.
+    pad_final_batch : bool, optional, default False
+        Whether to pad the final batch to the specified ``batch_size``. If ``func_process`` does not support batching,
+        this value is ignored.
+    batch_size : int, optional, default 4
+        Number of tiles in each batch. If ``func`` is not vectorized, this value is ignored.
 
     Returns
     -------
-        lifted_func : Callable
-            Lifted function.
+    lifted_func : Callable
+        Lifted function.
     """
 
     lifted_func = Lifted(func, vectorized, batch_axis, pad_final_batch, batch_size)
