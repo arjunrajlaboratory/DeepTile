@@ -3,7 +3,6 @@ from deeptile.core.data import Output
 from deeptile.core.lift import lift
 from deeptile.core.utils import compute_dask
 from functools import partial
-from rasterio import features
 
 
 def cellpose_segmentation(model_parameters, eval_parameters, output_format='masks'):
@@ -152,6 +151,8 @@ def deepcell_cytoplasm_segmentation(model_parameters, eval_parameters):
 
 
 def mask_to_polygons(mask, index, tile_index, stitch_index, tiling):
+
+    from rasterio import features
 
     i_tile, j_tile = tile_index
     _, _, i_stitch, j_stitch = stitch_index

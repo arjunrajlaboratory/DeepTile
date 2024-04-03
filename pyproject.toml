@@ -21,7 +21,6 @@ dependencies = [
     "dask",
     "nd2",
     "numpy",
-    "scikit-image",
     "tifffile"
 ]
 

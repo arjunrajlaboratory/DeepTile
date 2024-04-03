@@ -1,9 +1,6 @@
 import numpy as np
 from deeptile.core.data import Stitched
 from deeptile.core.jobs import Job
-from rtree import index
-from shapely.geometry import Polygon
-from skimage import measure
 
 
 def stitch_image(tiles, blend=True, sigma=10):
@@ -121,6 +118,8 @@ def stitch_polygons(polygons, iou_threshold=0.1):
 
 
 def stitch_masks(masks, iou_threshold=0.1):
+
+    from skimage import measure
 
     """Stitch tiled masks into a large mask.
 
@@ -302,6 +301,9 @@ def _generate_taper(tile_size, overlap, sigma):
 
 
 def _overlapping_polygons_rtree(polygons1, polygons2, iou_threshold=0.1):
+
+    from rtree import index
+    from shapely.geometry import Polygon
 
     # Initialize an empty R-tree index
     idx = index.Index()
