@@ -34,7 +34,7 @@ def cellpose_segmentation(model_parameters, eval_parameters, output_format='mask
     def _func_segment(tile, index, tile_index, stitch_index, tiling):
 
         tile = compute_dask(tile)
-        mask = model.eval(tile, tile=False, **eval_parameters)[0]
+        mask = model.eval(tile, **eval_parameters)[0]
 
         if output_format == 'masks':
             return mask
