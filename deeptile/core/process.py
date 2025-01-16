@@ -6,7 +6,7 @@ from functools import partial
 
 def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
                        args, kwargs, arg_indices, kwarg_indices,
-                       job, reference, processed_istree, processed_indices, processed_tiles,
+                       job, reference, batch_axis_len, processed_istree, processed_indices, processed_tiles,
                        batch_indices):
 
     """Process tiles using a vectorized function.
@@ -34,6 +34,8 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
         Job associated with this processing step.
     reference : Tiled
         Reference array of tiles.
+    batch_axis_len : int
+        Length of the batch axis.
     processed_istree : bool
         Whether ``processed_tiles`` is a tree.
     processed_indices : list of tuple
@@ -70,9 +72,9 @@ def process_vectorized(func, batch_axis, pad_final_batch, batch_size,
             for processed_index in processed_indices:
                 update_tiles(trees.tree_index(processed_tiles, processed_index),
                              trees.tree_index(processed_tile, processed_index),
-                             tuple(index[:2]), batch_axis)
+                             tuple(index[:2]), batch_axis, batch_axis_len)
         else:
-            update_tiles(processed_tiles, processed_tile, tuple(index[:2]), batch_axis)
+            update_tiles(processed_tiles, processed_tile, tuple(index[:2]), batch_axis, batch_axis_len)
 
     return processed_istree, processed_indices, processed_tiles
 
@@ -312,7 +314,7 @@ def strip_output_wrapper(processed_tile):
     return processed_tile
 
 
-def update_tiles(processed_tiles, processed_tile, index, batch_axis):
+def update_tiles(processed_tiles, processed_tile, index, batch_axis, batch_axis_len=None):
 
     """Update a Tiled object.
 
@@ -326,25 +328,28 @@ def update_tiles(processed_tiles, processed_tile, index, batch_axis):
         Index of a tile.
     batch_axis : bool
         Whether to use the first axis to create batches.
+    batch_axis_len : int, optional, default None
+        Length of the batch axis.
     """
 
     if batch_axis:
 
         current_tile = processed_tiles[index]
 
-        if processed_tiles.metadata['stackable'] or processed_tiles.metadata['isimage']:
-
-            if current_tile is None:
-                processed_tiles[index] = processed_tile[None]
-            else:
-                processed_tiles[index] = np.concatenate((current_tile, processed_tile[None]), 0)
+        if current_tile is None:
+                
+            processed_tiles[index] = [processed_tile]
 
         else:
 
-            if current_tile is None:
-                processed_tiles[index] = utils.cast_list_to_array([processed_tile])
-            else:
-                processed_tiles[index] = np.concatenate((current_tile, utils.cast_list_to_array([processed_tile])), 0)
+            current_tile.append(processed_tile)
+
+            if len(current_tile) == batch_axis_len:
+                
+                if processed_tiles.metadata['stackable'] or processed_tiles.metadata['isimage']:
+                    processed_tiles[index] = np.stack(current_tile)
+                else:
+                    processed_tiles[index] = utils.cast_list_to_array(current_tile)
 
     else:
 
@@ -375,7 +380,7 @@ def check_compatability(tiles):
 
     profile = None
     mask = None
-    for i, ts in enumerate(tiles):
+    for ts in tiles:
 
         if profile is None:
             profile = ts.profile

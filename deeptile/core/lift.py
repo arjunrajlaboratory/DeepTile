@@ -101,6 +101,8 @@ class Lifted:
             nonempty_indices = [np.repeat(np.array(indices), batch_axis_len, 0) for indices in nonempty_indices]
             nonempty_indices.append(batch_axis_indices)
             nonempty_indices = tuple(nonempty_indices)
+        else:
+            batch_axis_len = None
 
         if self.vectorized:
             n_steps = np.ceil(len(nonempty_indices[0]) / self.batch_size).astype(int)
@@ -117,6 +119,7 @@ class Lifted:
             'job': job,
             'reference': reference,
             'nonempty_indices': nonempty_indices,
+            'batch_axis_len': batch_axis_len,
             'processed_istree': processed_istree,
             'processed_indices': processed_indices,
             'n_steps': n_steps,
@@ -161,14 +164,16 @@ class Lifted:
 
             if self.vectorized:
 
+                batch_axis_len = variables['batch_axis_len']
+                
                 batch_offset = step * self.batch_size
                 batch_indices = tuple(i[batch_offset:batch_offset + self.batch_size] for i in nonempty_indices)
 
                 processed_istree, processed_indices, processed_tiles = \
                     process.process_vectorized(self.func, self.batch_axis, self.pad_final_batch, self.batch_size,
                                                args, kwargs, arg_indices, kwarg_indices,
-                                               job, reference, processed_istree, processed_indices, processed_tiles,
-                                               batch_indices)
+                                               job, reference, batch_axis_len, processed_istree, processed_indices,
+                                               processed_tiles, batch_indices)
 
             else:
 
