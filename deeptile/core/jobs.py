@@ -1,6 +1,3 @@
-import gc
-
-
 class Job:
 
     """Job class that stores jobs created by a DeepTile object.
@@ -36,5 +33,3 @@ class Job:
         self.type = job_type
         self.locals = job_locals
         self.output = None
-
-        gc.collect()
